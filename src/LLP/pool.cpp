@@ -1,0 +1,406 @@
+#include "pool.h"
+#include "daemon.h"
+#include "../core.h"
+#include "../util.h"
+#include "../base58.h"
+
+#include "../LLD/record.h"
+#include <math.h>
+
+namespace LLP
+{	
+
+	void PoolConnection::Clear()
+	{
+		LOCK(BLOCK_MUTEX);
+		
+		nBlockRequests = 0;
+		nBlocksWaiting = 0;
+		
+		while(!NEW_BLOCKS.empty())
+		{
+			Core::CBlock* BLOCK = NEW_BLOCKS.top();
+			NEW_BLOCKS.pop();
+			
+			delete BLOCK;
+		}
+		
+		for(std::map<uint1024, Core::CBlock*>::iterator IT = MAP_BLOCKS.begin(); IT != MAP_BLOCKS.end(); ++ IT)
+			delete IT->second;
+						
+		MAP_BLOCKS.clear();
+	}
+
+	void PoolConnection::AddBlock(Core::CBlock* BLOCK)
+	{
+		LOCK(BLOCK_MUTEX);
+		NEW_BLOCKS.push(BLOCK);
+		
+		nBlocksWaiting--;
+	}
+	
+	
+	/** Event Function to Customize Code For Inheriting Class Happening on the LLP Data Threads. **/
+	void PoolConnection::Event(unsigned char EVENT, unsigned int LENGTH)
+	{	
+	
+		/** Handle any DDOS Packet Filters. **/
+		if(EVENT == EVENT_HEADER)
+		{
+			Packet PACKET = this->INCOMING;
+			
+			/** Check a Block Packet once the Header has been Read. **/
+			if(fDDOS)
+			{
+				if(PACKET.HEADER == SUBMIT_SHARE && PACKET.LENGTH > 136)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == LOGIN && PACKET.LENGTH > 55)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == BLOCK_DATA)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == ACCOUNT_BALANCE)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == PENDING_PAYOUT)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == ACCEPT)
+					DDOS->Ban();
+				
+				if(PACKET.HEADER == REJECT)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == BLOCK)
+					DDOS->Ban();
+					
+				if(PACKET.HEADER == STALE)
+					DDOS->Ban();
+			}
+				
+			return;
+		}
+		
+		
+		/** Handle for a Packet Data Read. **/
+		if(EVENT == EVENT_PACKET)
+		{
+			return;
+		}
+		
+		
+		/** On Generic Event, Broadcast new block if flagged. **/
+		if(EVENT == EVENT_GENERIC)
+		{
+			if(fNewBlock)
+			{
+				if(Core::fSubmittingBlock)
+					return;
+				
+				Respond(NEW_BLOCK);
+				
+				/** Only Delete Maps on Pool Connection on New Block. **/
+				Clear();
+				
+				fNewBlock = false;
+			}
+			
+			/** If there are new blocks on the stack, send them to connection and add to map. **/
+			{ LOCK(BLOCK_MUTEX);
+				while(!NEW_BLOCKS.empty())
+				{
+					Core::CBlock* BLOCK = NEW_BLOCKS.top();
+					NEW_BLOCKS.pop();
+					
+					/** Add to the block map. **/
+					MAP_BLOCKS[BLOCK->GetHash()] = BLOCK;
+					
+					/** Construct a response packet by serializing the Block. **/
+					Packet RESPONSE = GetPacket(BLOCK_DATA);
+					RESPONSE.DATA   = SerializeBlock(BLOCK);
+					RESPONSE.LENGTH = RESPONSE.DATA.size();
+					
+					this->WritePacket(RESPONSE);
+					//printf("[THREAD] Pool LLP: Sent Block %s\n", BLOCK->GetHash().ToString().substr(0, 30).c_str());
+				}
+			}
+			
+			return;
+		}
+		
+		/** On Connect Event, Assign the Proper Daemon Handle. **/
+		if(EVENT == EVENT_CONNECT)
+		{
+			/** Assign this thread to a Daemon Handle. **/
+			DAEMON = Core::FindDaemon();
+			nID = DAEMON->AssignConnection(this);
+			
+			return;
+		}
+		
+		/** On Disconnect Event, Reduce the Connection Count for Daemon **/
+		if(EVENT == EVENT_DISCONNECT)
+		{
+			DAEMON->RemoveConnection(nID);
+			
+			return;
+		}
+	}	
+	
+	/** This function is necessary for a template LLP server. It handles your 
+		custom messaging system, and how to interpret it from raw packets. **/
+	bool PoolConnection::ProcessPacket()
+	{
+		Packet PACKET   = this->INCOMING;
+		
+		/** Handle Login. **/
+		if(PACKET.HEADER == LOGIN)
+		{
+			/** Multiply DDOS Score for Multiple Logins after Successful Login. **/
+			if(fLoggedIn)
+			{
+				if(fDDOS)
+					DDOS->rSCORE += 10;
+					
+				return true;
+			}
+			
+			ADDRESS = bytes2string(PACKET.DATA);
+			Core::CoinshieldAddress cAddress(ADDRESS);
+			
+			if(!cAddress.IsValid())
+			{
+				printf("[THREAD] Pool LLP: Bad Account %s\n", ADDRESS.c_str());
+				if(fDDOS)
+					DDOS->Ban();
+					
+				return false;
+			}
+			
+			fLoggedIn = true;
+			
+			printf("[THREAD] Pool Login: %s\n", ADDRESS.c_str());
+			if(!Core::AccountDB.HasKey(ADDRESS))
+			{
+				LLD::Account cNewAccount(ADDRESS);
+				Core::AccountDB.UpdateRecord(cNewAccount);
+					
+				printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
+				printf("[ACCOUNT] New Account %s\n", ADDRESS.c_str());
+				printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
+			}
+			
+			return true;
+		}
+		
+		
+		/** Reject Requests if not Logged In. **/
+		if(!fLoggedIn)
+		{
+			/** Amplify rScore for Requests before Logged in [Prevent DDOS this way]. **/
+			if(fDDOS)
+				DDOS->rSCORE += 10;
+			
+			printf("[THREAD] Pool LLP: Not Logged In. Rejected Request.\n");
+			
+			return false;
+		}
+		
+		
+		/** Ignore any Requests from Clients while Setting up a New Round. **/
+		//if(Core::fCoinbasePending || Core::fSubmittingBlock || Core::fNewRound)
+		//	return true;
+		
+		
+		/** New block Process:
+			Keeps a map of requested blocks for this connection.
+			Clears map once new block is submitted successfully. **/
+		if(PACKET.HEADER == GET_BLOCK)
+		{ 
+			LOCK(BLOCK_MUTEX); 
+			nBlockRequests++; 
+			
+			return true; 
+		}
+		
+		
+		
+		/** Submit Share Process:
+			Accepts a new block Merkle and nNonce for submit.
+			This is to correlate where in memory the actual
+			block is from MAP_BLOCKS. **/
+		if(PACKET.HEADER == SUBMIT_SHARE)
+		{
+			uint1024 hashPrimeOrigin;
+			hashPrimeOrigin.SetBytes(std::vector<unsigned char>(PACKET.DATA.begin(), PACKET.DATA.end() - 8));
+				
+				
+			/** Don't Accept a Share with no Correlated Block. **/
+			if(!MAP_BLOCKS.count(hashPrimeOrigin))
+			{
+				Respond(REJECT);
+				printf("[THREAD] Pool LLP: Block Not Found %s\n", hashPrimeOrigin.ToString().substr(0, 30).c_str());
+				Respond(NEW_BLOCK);
+				
+				if(fDDOS)
+					DDOS->rSCORE += 1;
+				
+				return true;
+			}
+			
+			/** Reject the Share if it is not of the Most Recent Block. **/
+			if(MAP_BLOCKS[hashPrimeOrigin]->nHeight != Core::nBestHeight)
+			{
+				printf("[THREAD] Rejected Share - Share is Stale\n");
+				Respond(STALE);
+				Respond(NEW_BLOCK);
+				
+				/** Be Lenient on Stale Shares [But Still amplify score above normal 1 per request.] **/
+				if(fDDOS)
+					DDOS->rSCORE += 2;
+					
+				return true;
+			}
+				
+				
+			/** Get the Prime Number Found. **/
+			uint64 nNonce = bytes2uint64(std::vector<unsigned char>(PACKET.DATA.end() - 8, PACKET.DATA.end()));
+			uint1024 hashPrime = hashPrimeOrigin + nNonce;
+		
+		
+			/** Check the Share that was just submitted. **/
+			{ LOCK(Core::PRIMES_MUTEX);
+				if(Core::PRIMES_MAP.count(hashPrime))
+				{
+					printf("[THREAD] Duplicate Share %s\n", hashPrime.ToString().substr(0, 30).c_str());
+					Respond(REJECT);
+					
+					/** Give a Heavy Score for Duplicates. [To Amplify the already existing ++ per Request.] **/
+					if(fDDOS)
+						DDOS->rSCORE += 5;
+					
+					return true;
+				}
+			}
+			
+			
+			/** Check the Difficulty of the Share. **/
+			//Timer SHARE_TIMER;
+			//SHARE_TIMER.Start();
+			//double nDifficulty = Core::CheckPrimeDifficulty(CBigNum(hashPrime));
+			//SHARE_TIMER.Stop();
+			
+			//Timer GMP_TIMER;
+			//GMP_TIMER.Start();
+			double nDifficulty = Core::GmpVerification(CBigNum(hashPrime));
+			//GMP_TIMER.Stop();
+			
+			if(Core::SetBits(nDifficulty) >= Core::nMinimumShare)
+			{
+				{ LOCK(Core::PRIMES_MUTEX);
+					if(!Core::PRIMES_MAP.count(hashPrime))
+						Core::PRIMES_MAP[hashPrime] = nDifficulty;
+				}
+				
+				if(nDifficulty < 8)
+				{
+					Core::nDifficultyShares[(unsigned int) floor(nDifficulty - 3)]++;
+				}
+				
+				LLD::Account cAccount = Core::AccountDB.GetRecord(ADDRESS);
+				uint64 nWeight = pow(13.0, nDifficulty - 2.0);
+				cAccount.nRoundShares += nWeight;
+				Core::AccountDB.UpdateRecord(cAccount);
+				
+				//printf("[THREAD] Share Accepted of Difficulty %f | Weight %llu\n", nDifficulty, nWeight);
+				//printf("[THREAD] Share Accepted [%s] of Difficulty %f GMP [%u ms]\n", ADDRESS.substr(0, 5).c_str(), nDifficulty, GMP_TIMER.ElapsedMilliseconds());
+				
+				/** If the share is above the difficulty, give block finder bonus and add to Submit Stack. **/
+				if(nDifficulty >= Core::GetDifficulty(MAP_BLOCKS[hashPrimeOrigin]->nBits))
+				{
+					MAP_BLOCKS[hashPrimeOrigin]->nNonce = nNonce;
+					
+					{ LOCK(SUBMISSION_MUTEX);
+						if(!SUBMISSION_BLOCK)
+						{
+							SUBMISSION_BLOCK = MAP_BLOCKS[hashPrimeOrigin];
+							
+							Respond(BLOCK);
+						}
+					}
+					
+					return true;
+				}
+				else
+					Respond(ACCEPT);
+			}
+			else
+			{
+				printf("[THREAD] Share Below Difficulty %f\n", nDifficulty);
+				
+				/** Give Heavy Score for Below Difficulty Shares. Would require at least 4 per Second to fulfill a score of 20. **/
+				if(fDDOS)
+					DDOS->rSCORE += 5;
+				
+				Respond(REJECT);
+			}
+				
+			return true;
+		}
+			
+		/** Send the Current Account balance to Pool Miner. **/
+		if(PACKET.HEADER == GET_BALANCE)
+		{
+			Packet RESPONSE = GetPacket(ACCOUNT_BALANCE);
+			RESPONSE.LENGTH = 8;
+			RESPONSE.DATA = uint2bytes64(Core::AccountDB.GetRecord(ADDRESS).nAccountBalance);
+				
+			//printf("[THREAD] Pool LLP: Account %s --> Balance Requested.\n", ADDRESS.c_str());
+			this->WritePacket(RESPONSE);
+				
+			return true;
+		}
+		
+		/** Send the Current Account balance to Pool Miner. **/
+		if(PACKET.HEADER == GET_PAYOUT)
+		{
+			Packet RESPONSE = GetPacket(PENDING_PAYOUT);
+			RESPONSE.LENGTH = 8;
+			
+			uint64 nPendingPayout = 0;
+			if(Core::cGlobalCoinbase.mapOutputs.count(ADDRESS))
+				nPendingPayout = Core::cGlobalCoinbase.mapOutputs[ADDRESS];
+				
+			RESPONSE.DATA = uint2bytes64(nPendingPayout);
+				
+			//printf("[THREAD] Pool LLP: Account %s --> Payout Data Requested.\n", ADDRESS.c_str());
+			this->WritePacket(RESPONSE);
+				
+			return true;
+		}
+			
+		/** Handle a Ping from the Pool Miner. **/
+		if(PACKET.HEADER == PING){ this->WritePacket(GetPacket(PING)); return true; }
+			
+		return false;
+	}
+	
+	/** Convert the Header of a Block into a Byte Stream for Reading and Writing Across Sockets. **/
+	std::vector<unsigned char> PoolConnection::SerializeBlock(Core::CBlock* BLOCK)
+	{
+		std::vector<unsigned char> HASH        = BLOCK->GetHash().GetBytes();
+		std::vector<unsigned char> MINIMUM     = uint2bytes(Core::nMinimumShare);
+		std::vector<unsigned char> DIFFICULTY  = uint2bytes(BLOCK->nBits);
+		std::vector<unsigned char> HEIGHT      = uint2bytes(BLOCK->nHeight);
+			
+		std::vector<unsigned char> DATA;
+		DATA.insert(DATA.end(), HASH.begin(),             HASH.end());
+		DATA.insert(DATA.end(), MINIMUM.begin(),       MINIMUM.end());
+		DATA.insert(DATA.end(), DIFFICULTY.begin(), DIFFICULTY.end());
+		DATA.insert(DATA.end(), HEIGHT.begin(),         HEIGHT.end());
+			
+		return DATA;
+	}
+}
