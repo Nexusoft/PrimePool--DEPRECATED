@@ -11,6 +11,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <gmp.h>
 #include "bignum.h"
+#include <fstream>
 
 #define LOCK(a) boost::lock_guard<boost::mutex> lock(a)
 
@@ -23,7 +24,19 @@ typedef unsigned long long  uint64;
 
 int ConsoleOutput(const char* pszFormat, ...);
 
+inline bool IsBannedAccount(std::string address)
+{
+    return address == "2SNsMPC3SStHrbwfLyRL9HsTDMUKXcvwc1Ubz7gQsfcJqQ26JzB" || address == "2SGA32Jt5upD5SYRWkBVY72Mv9nLGxE4R1FGeuRMef9GEks78KP";
+}
 
+#ifndef WIN32
+inline void Sleep(int64 n)
+{
+    /*Boost has a year 2038 problem— if the request sleep time is past epoch+2^31 seconds the sleep returns instantly.
+      So we clamp our sleeps here to 10 years and hope that boost is fixed by 2028.*/
+    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n>315576000000LL?315576000000LL:n));
+}
+#endif
 //inline void Sleep(unsigned int nTime){ boost::this_thread::sleep(boost::posix_time::milliseconds(nTime)); }
 
 inline bignum2mpz(const BIGNUM *bn, mpz_t g)
@@ -139,5 +152,12 @@ inline std::string bytes2string(std::vector<unsigned char> BYTES, int nOffset = 
 	std::string STRING(BYTES.begin() + nOffset, BYTES.end());
 	return STRING;
 }
+
+
+std::vector<std::string> LoadBannedAccounts();
+
+std::vector<std::string> LoadBannedIPAddresses();
+
+void SaveBannedIPAddress(std::string ip_address);
 
 #endif

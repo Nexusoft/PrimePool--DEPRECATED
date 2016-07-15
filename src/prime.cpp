@@ -241,7 +241,7 @@ namespace Core
 
 	
 	/** Determines if given number is Prime. Accuracy can be determined by "checks". 
-		The default checks the Coinshield Network uses is 2 **/
+		The default checks the Niro Network uses is 2 **/
 	bool PrimeCheck(CBigNum test, int checks)
 	{
 		/** Check A: Divisor Test **/
