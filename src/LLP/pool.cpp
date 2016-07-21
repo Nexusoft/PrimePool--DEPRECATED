@@ -194,19 +194,18 @@ namespace LLP
 				printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
 			}
             
-            std::vector<std::string> lBannedAccounts = LoadBannedAccounts();
-            
-            if(std::find(lBannedAccounts.begin(), lBannedAccounts.end(), ADDRESS) != lBannedAccounts.end() )
+            if(IsBannedAccount(ADDRESS) )
             {
                 printf("[ACCOUNT] Account: %s is banned\n", ADDRESS.c_str() );
                 
                 // check to see whether this IP is in the banned IP list
                 // if not then add it so that we can perma ban the IP
-                std::vector<std::string> lBannedIPAddresses = LoadBannedIPAddresses();
-                if( std::find(lBannedIPAddresses.begin(), lBannedIPAddresses.end(), ip_address) == lBannedIPAddresses.end() )
+                if( !IsBannedIPAddress(ip_address) )
                 {
                     SaveBannedIPAddress(ip_address);
                 }
+                
+                DDOS->Ban();
                 
                 fLoggedIn = false;
                 

@@ -1,5 +1,7 @@
 #include "util.h"
 #include "core.h"
+#include <sys/types.h>
+#include <sys/stat.h>
 
 static boost::mutex MUTEX;
 static FILE* fileout = NULL;
@@ -35,35 +37,58 @@ int ConsoleOutput(const char* pszFormat, ...)
 	return ret;
 }
 
-std::vector<std::string> LoadBannedAccounts()
+static std::vector<std::string> BANNED_ACCOUNTS; // these need to go somewhere better
+static int BANNED_ACCOUNTS_LAST_MOD = 0;
+static boost::mutex BANNED_ACCOUNTS_MUTEX;
+void LoadBannedAccounts()
 {
-    //PS This should be loading once and then caching the list, reloading if the filetime has changed
-    std::vector<std::string> lBannedAccounts;
-    std::ifstream lBannedAccountsFile("banned_accounts.dat");
-    std::string lLine;
+    BANNED_ACCOUNTS_MUTEX.lock();
     
-    while(std::getline(lBannedAccountsFile, lLine))
+    struct stat st;
+    stat ("banned_accounts.dat", &st);
+    int lLastMod = st.st_mtime;
+    
+    if( BANNED_ACCOUNTS.size() == 0 || lLastMod != BANNED_ACCOUNTS_LAST_MOD)
     {
-        lBannedAccounts.push_back(lLine);
+        std::ifstream lBannedAccountsFile("banned_accounts.dat");
+        std::string lLine;
         
+        while(std::getline(lBannedAccountsFile, lLine))
+        {
+            BANNED_ACCOUNTS.push_back(lLine);
+        }
+        
+        BANNED_ACCOUNTS_LAST_MOD = lLastMod;
     }
     
-    return lBannedAccounts;
+    BANNED_ACCOUNTS_MUTEX.unlock();
 }
 
-std::vector<std::string> LoadBannedIPAddresses()
+static std::vector<std::string> BANNED_IP_ADDRESSES;
+static int BANNED_IP_ADDRESSES_LAST_MOD = 0;
+static boost::mutex BANNED_IP_ADDRESSES_MUTEX;
+void LoadBannedIPAddresses()
 {
-    //PS This should be loading once and then caching the list, reloading if the filetime has changed
-    std::vector<std::string> lBannedIPAddresses;
-    std::ifstream lBannedIPAddressesFile("banned_ip_addresses.dat");
-    std::string lLine;
+    BANNED_IP_ADDRESSES_MUTEX.lock();
     
-    while(std::getline(lBannedIPAddressesFile, lLine))
+    struct stat st;
+    stat ("banned_ip_addresses.dat", &st);
+    int lLastMod = st.st_mtime;
+    
+    if( BANNED_IP_ADDRESSES.size() == 0  || lLastMod != BANNED_IP_ADDRESSES_LAST_MOD )
     {
-        lBannedIPAddresses.push_back(lLine);  
+        std::ifstream lBannedIPAddressesFile("banned_ip_addresses.dat");
+        std::string lLine;
+        
+        while(std::getline(lBannedIPAddressesFile, lLine))
+        {
+            BANNED_IP_ADDRESSES.push_back(lLine);  
+        }
+        
+        BANNED_IP_ADDRESSES_LAST_MOD = lLastMod;
     }
     
-    return lBannedIPAddresses;
+    BANNED_IP_ADDRESSES_MUTEX.unlock();
 }
 
 void SaveBannedIPAddress(std::string ip_address)
@@ -71,4 +96,16 @@ void SaveBannedIPAddress(std::string ip_address)
     std::ofstream lBannedIPAddressesFile("banned_ip_addresses.dat", std::ios::out | std::ios::app);
     lBannedIPAddressesFile << ip_address + "\n";
     lBannedIPAddressesFile.close();
+}
+
+bool IsBannedIPAddress( std::string ip_address)
+{
+    LoadBannedIPAddresses();
+    return std::find(BANNED_IP_ADDRESSES.begin(), BANNED_IP_ADDRESSES.end(), ip_address) != BANNED_IP_ADDRESSES.end() ;    
+}
+
+bool IsBannedAccount( std::string account )
+{
+    LoadBannedAccounts();
+    return std::find(BANNED_ACCOUNTS.begin(), BANNED_ACCOUNTS.end(), account) != BANNED_ACCOUNTS.end() ; 
 }

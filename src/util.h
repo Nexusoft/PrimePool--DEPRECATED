@@ -24,11 +24,6 @@ typedef unsigned long long  uint64;
 
 int ConsoleOutput(const char* pszFormat, ...);
 
-inline bool IsBannedAccount(std::string address)
-{
-    return address == "2SNsMPC3SStHrbwfLyRL9HsTDMUKXcvwc1Ubz7gQsfcJqQ26JzB" || address == "2SGA32Jt5upD5SYRWkBVY72Mv9nLGxE4R1FGeuRMef9GEks78KP";
-}
-
 #ifndef WIN32
 inline void Sleep(int64 n)
 {
@@ -154,10 +149,14 @@ inline std::string bytes2string(std::vector<unsigned char> BYTES, int nOffset = 
 }
 
 
-std::vector<std::string> LoadBannedAccounts();
+void LoadBannedAccounts();
 
-std::vector<std::string> LoadBannedIPAddresses();
+void LoadBannedIPAddresses();
 
 void SaveBannedIPAddress(std::string ip_address);
+
+bool IsBannedIPAddress( std::string ip_address);
+
+bool IsBannedAccount( std::string account );
 
 #endif
