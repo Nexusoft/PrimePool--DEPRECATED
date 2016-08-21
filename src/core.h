@@ -118,7 +118,7 @@ namespace Core
 	
 	
 	/** Start the Daemon Handlers and LLP Pool Server. **/
-	void StartPool(int nMaxDaemons, int nPoolThreads, bool fDDOS, int rScore, int cScore, int nMinShare);
+	void StartPool(int nPort, int nMaxDaemons, int nPoolThreads, bool fDDOS, int rScore, int cScore, int nMinShare, int nPoolFee);
 	
 	
 	/** Clear the Global Shares Object. **/
@@ -152,7 +152,7 @@ namespace Core
 	/** Thread to Track the Blocks Found. **/
 	void OrphanThread();
 	
-	/** Thread to Track the Coinshield Network. **/
+	/** Thread to Track the Niro Network. **/
 	void MasterThread();
 }
 

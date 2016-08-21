@@ -6,6 +6,7 @@
 
 #include "../LLD/record.h"
 #include <math.h>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace LLP
 {	
@@ -52,32 +53,35 @@ namespace LLP
 			/** Check a Block Packet once the Header has been Read. **/
 			if(fDDOS)
 			{
-				if(PACKET.HEADER == SUBMIT_SHARE && PACKET.LENGTH > 136)
-					DDOS->Ban();
+				if(PACKET.LENGTH > 136)
+					DDOS->Ban("Max Packet Size Exceeded");
+				
+				if(PACKET.HEADER == SUBMIT_SHARE && PACKET.LENGTH != 136)
+					DDOS->Ban("Packet of Share not 136 Bytes");
 					
 				if(PACKET.HEADER == LOGIN && PACKET.LENGTH > 55)
-					DDOS->Ban();
+					DDOS->Ban("Login Message too Large");
 					
 				if(PACKET.HEADER == BLOCK_DATA)
-					DDOS->Ban();
+					DDOS->Ban("Received Block Data Header. Invalid as Request");
 					
 				if(PACKET.HEADER == ACCOUNT_BALANCE)
-					DDOS->Ban();
+					DDOS->Ban("Received Account Balance Header. Inavlid as Request");
 					
 				if(PACKET.HEADER == PENDING_PAYOUT)
-					DDOS->Ban();
+					DDOS->Ban("Recieved Pending Payout Header. Invald as Request");
 					
 				if(PACKET.HEADER == ACCEPT)
-					DDOS->Ban();
+					DDOS->Ban("Received Share Accepted Header. Invalid as Request");
 				
 				if(PACKET.HEADER == REJECT)
-					DDOS->Ban();
+					DDOS->Ban("Received Share Rejected Header. Invalid as Request.");
 					
 				if(PACKET.HEADER == BLOCK)
-					DDOS->Ban();
+					DDOS->Ban("Received Block Header. Invalid as Request.");
 					
 				if(PACKET.HEADER == STALE)
-					DDOS->Ban();
+					DDOS->Ban("Recieved Stale Share Header. Invalid as Request");
 			}
 				
 			return;
@@ -147,8 +151,9 @@ namespace LLP
 			
 			return;
 		}
-	}	
-	
+    }
+    
+   
 	/** This function is necessary for a template LLP server. It handles your 
 		custom messaging system, and how to interpret it from raw packets. **/
 	bool PoolConnection::ProcessPacket()
@@ -168,20 +173,20 @@ namespace LLP
 			}
 			
 			ADDRESS = bytes2string(PACKET.DATA);
-			Core::CoinshieldAddress cAddress(ADDRESS);
+			Core::NexusAddress cAddress(ADDRESS);
 			
-			if(!cAddress.IsValid())
+			if(!cAddress.IsValid() )
 			{
 				printf("[THREAD] Pool LLP: Bad Account %s\n", ADDRESS.c_str());
 				if(fDDOS)
-					DDOS->Ban();
+					DDOS->Ban("Invalid Nexus Address on Login");
 					
 				return false;
 			}
+            
+            std::string ip_address = SOCKET->remote_endpoint().address().to_string();
 			
-			fLoggedIn = true;
-			
-			printf("[THREAD] Pool Login: %s\n", ADDRESS.c_str());
+			printf("[THREAD] Pool Login: %s\t IP:%s\n", ADDRESS.c_str(), ip_address.c_str() );
 			if(!Core::AccountDB.HasKey(ADDRESS))
 			{
 				LLD::Account cNewAccount(ADDRESS);
@@ -191,7 +196,38 @@ namespace LLP
 				printf("[ACCOUNT] New Account %s\n", ADDRESS.c_str());
 				printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
 			}
-			
+            
+            if(IsBannedAccount(ADDRESS) )
+            {
+                printf("[ACCOUNT] Account: %s is banned\n", ADDRESS.c_str() );
+                
+                // check to see whether this IP is in the banned IP list
+                // if not then add it so that we can perma ban the IP
+                if( !IsBannedIPAddress(ip_address) )
+                {
+                    SaveBannedIPAddress(ip_address);
+                }
+                
+                DDOS->Ban("Account is Banned");
+                
+                fLoggedIn = false;
+                
+            }
+            else
+            {
+                fLoggedIn = true;
+                
+                //PS
+                // QUICK HACK these are google cloud and amazon AWS IP ranges which we should allow
+                // so don't add CHECK to debug.log 
+                if( !boost::starts_with(ip_address, "104.") && !boost::starts_with(ip_address, "130.") 
+                        && !boost::starts_with(ip_address, "23.") && !boost::starts_with(ip_address, "54.") && !boost::starts_with(ip_address, "52."))
+                    printf("[ACCOUNT] Account: CHECK Address: %s  IP: %s\n", ADDRESS.c_str(), ip_address.c_str() ); // this allows you to grep the debug.log for CHECK and eyeball the frequency and ip addresses
+                
+            }
+            
+            
+            
 			return true;
 		}
 		
@@ -253,7 +289,7 @@ namespace LLP
 			/** Reject the Share if it is not of the Most Recent Block. **/
 			if(MAP_BLOCKS[hashPrimeOrigin]->nHeight != Core::nBestHeight)
 			{
-				printf("[THREAD] Rejected Share - Share is Stale\n");
+				printf("[THREAD] Rejected Share - Share is Stale, submitted: %f  current: %f\n", MAP_BLOCKS[hashPrimeOrigin]->nHeight, Core::nBestHeight);
 				Respond(STALE);
 				Respond(NEW_BLOCK);
 				

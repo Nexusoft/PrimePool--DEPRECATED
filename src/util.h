@@ -11,6 +11,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <gmp.h>
 #include "bignum.h"
+#include <fstream>
 
 #define LOCK(a) boost::lock_guard<boost::mutex> lock(a)
 
@@ -23,7 +24,14 @@ typedef unsigned long long  uint64;
 
 int ConsoleOutput(const char* pszFormat, ...);
 
-
+#ifndef WIN32
+inline void Sleep(int64 n)
+{
+    /*Boost has a year 2038 problem— if the request sleep time is past epoch+2^31 seconds the sleep returns instantly.
+      So we clamp our sleeps here to 10 years and hope that boost is fixed by 2028.*/
+    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n>315576000000LL?315576000000LL:n));
+}
+#endif
 //inline void Sleep(unsigned int nTime){ boost::this_thread::sleep(boost::posix_time::milliseconds(nTime)); }
 
 inline bignum2mpz(const BIGNUM *bn, mpz_t g)
@@ -102,8 +110,13 @@ inline std::vector<unsigned char> uint2bytes(unsigned int UINT)
 			
 			
 /** Convert a byte stream into unsigned integer 32 bit. **/	
-inline unsigned int bytes2uint(std::vector<unsigned char> BYTES, int nOffset = 0) { return (BYTES[0 + nOffset] << 24) + (BYTES[1 + nOffset] << 16) + (BYTES[2 + nOffset] << 8) + BYTES[3 + nOffset]; }
-			
+inline unsigned int bytes2uint(std::vector<unsigned char> BYTES, int nOffset = 0) 
+{
+	if(BYTES.size() < nOffset + 4)
+		return 0;
+	
+	return (BYTES[0 + nOffset] << 24) + (BYTES[1 + nOffset] << 16) + (BYTES[2 + nOffset] << 8) + BYTES[3 + nOffset]; 
+}		
 			
 /** Convert a 64 bit Unsigned Integer to Byte Vector using Bitwise Shifts. **/
 inline std::vector<unsigned char> uint2bytes64(uint64 UINT)
@@ -139,5 +152,16 @@ inline std::string bytes2string(std::vector<unsigned char> BYTES, int nOffset = 
 	std::string STRING(BYTES.begin() + nOffset, BYTES.end());
 	return STRING;
 }
+
+
+void LoadBannedAccounts();
+
+void LoadBannedIPAddresses();
+
+void SaveBannedIPAddress(std::string ip_address);
+
+bool IsBannedIPAddress( std::string ip_address);
+
+bool IsBannedAccount( std::string account );
 
 #endif

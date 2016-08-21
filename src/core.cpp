@@ -6,6 +6,7 @@
 
 #include "core.h"
 #include "base58.h"
+#include "util.h"
 #include <algorithm>
 
 namespace Core
@@ -13,7 +14,7 @@ namespace Core
 
 	/** Coinbase Transaction for this Block. **/
 	Coinbase cGlobalCoinbase;
-	std::string POOL_VERSION = "1.0.0";
+	std::string POOL_VERSION = "1.0.1";
 	
 
 	/** Wallet Connection Variables. **/
@@ -58,6 +59,8 @@ namespace Core
 	unsigned int nCurrentRound = 1;
 	
 	uint64 nMinimumShare = 45000000;
+    
+    double lfPoolFee = 0.02;
 	
 	/** The Database Handles. **/
 	LLD::Database<uint1024, LLD::Block> BlockDB("blk.dat");
@@ -86,13 +89,16 @@ namespace Core
 	
 	
 	/** Entry Function to Start the Daemon Threads and Pool Server. **/
-	void StartPool(int nMaxDaemons, int nPoolThreads, bool fDDOS, int rScore, int cScore, int nMinShare)
+	void StartPool(int nPort, int nMaxDaemons, int nPoolThreads, bool fDDOS, int rScore, int cScore, int nMinShare, int nPoolFee)
 	{
-		printf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCoinshield LLP Prime Pool %s Initializing...\n", POOL_VERSION.c_str());
-		printf("[MASTER] Starting Pool with %u Daemon Handles, %u Pool Threads %f Min Share %s | rScore = %u cScore = %u\n", nMaxDaemons, nPoolThreads, nMinShare / 10000000.0, fDDOS ? "With DDOS Protection" : "", rScore, cScore);
-		
+        //printf("go");
+        printf("\n\n\n\n\n\n\n\n\n\n\n\Niro LLP Prime Pool %s Initializing...\n", POOL_VERSION.c_str());
+        printf("[MASTER] Starting Pool with %d Daemon Handles, %d Pool Threads %f Min Share %s | rScore = %d cScore = %d\n", nMaxDaemons, nPoolThreads, nMinShare / 10000000.0, fDDOS ? "With DDOS Protection" : "", rScore, cScore);
+		//printf("here");
 		nMinimumShare = nMinShare;
-		
+        
+        lfPoolFee = (double)nPoolFee / 100.0;
+
 		InitializePrimes();
 		Sleep(1000);
 		
@@ -101,7 +107,7 @@ namespace Core
 		std::vector<std::string> vAccounts = GetSortedAccounts();
 		for( int nIndex = 0; nIndex < vAccounts.size(); nIndex++)
 		{
-			CoinshieldAddress cAddress(vAccounts[nIndex]);
+			NexusAddress cAddress(vAccounts[nIndex]);
 			if(!cAddress.IsValid())
 			{
 				printf("[DATABASE] Erasing Invalid Record: %s\n", vAccounts[nIndex].c_str());
@@ -124,11 +130,12 @@ namespace Core
 		
 		LLP::Thread_t MASTER(MasterThread);
 		LLP::Thread_t ORPHAN(OrphanThread);
+        printf("Startin Daemon connections");
 		for(int nIndex = 0; nIndex < nMaxDaemons; nIndex++)
 			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, "127.0.0.1", "9325"));
-			
+		printf("...done");
 		Sleep(1000);
-		SERVER    = new LLP::Server<LLP::PoolConnection>(9549, nPoolThreads, fDDOS, cScore, rScore, 60);
+		SERVER    = new LLP::Server<LLP::PoolConnection>(nPort, nPoolThreads, fDDOS, cScore, rScore, 20);
 		//WEBSERVER = new LLP::Server<LLP::UiConnection>  (9555, 5, false, 0, 0, 10);
 	}
 	
@@ -193,7 +200,7 @@ namespace Core
 			LLD::Account cAccount = AccountDB.GetRecord(nIterator->first);
 			cAccount.nAccountBalance += nIterator->second;
 			
-			printf("[MASTER] Account %s Refunded %f CSD\n", nIterator->first.c_str(), nIterator->second / 1000000.0);
+			printf("[MASTER] Account %s Refunded %f NIRO\n", nIterator->first.c_str(), nIterator->second / 1000000.0);
 			AccountDB.UpdateRecord(cAccount);
 		}
 		
@@ -220,8 +227,7 @@ namespace Core
 		
 		
 		/** Make Sure Miners Aren't Credited the Pool Fee [2% for Now]. **/
-		nReward -= (nReward * 0.02);
-		
+		nReward -= (nReward * lfPoolFee);
 		
 		/** The 2% Block Finder Bonus from Previous Round. **/
 		if(LAST_ROUND_BLOCKFINDER != "")
@@ -232,6 +238,9 @@ namespace Core
 			AccountDB.UpdateRecord(cAccount);
 			
 			cBlock.cCredits.AddCredit(LAST_ROUND_BLOCKFINDER, nCredit);
+            
+            printf("[ACCOUNT] Block Finder Bonus to %s of %f NIRO\n", LAST_ROUND_BLOCKFINDER.c_str(), (nCredit) / 1000000.0 );
+            
 			nReward -= nCredit;
 		}
 		
@@ -239,7 +248,6 @@ namespace Core
 		/** Calculate the Total Weight of the Last Round. **/
 		uint64 nTotalWeight = TotalWeight();
 		uint64 nTotalReward = 0;
-		
 		
 		/** Update the Accounts in the Database Handle. **/
 		std::vector<std::string> vKeys = AccountDB.GetKeys();
@@ -266,6 +274,7 @@ namespace Core
 					
 			/** Credit the Account from its Weight. **/
 			unsigned int nCredit = (((double)cAccount.nRoundShares / nTotalWeight) * nReward);
+            
 			cAccount.nAccountBalance += nCredit;
 			nTotalReward += nCredit;
 			
@@ -278,7 +287,7 @@ namespace Core
 			AccountDB.UpdateRecord(cAccount);
 			
 			
-			printf("[ACCOUNT] Account: %s | Credit: %f CSD | Balance: %f CSD\n", cAccount.cKey.c_str(), nCredit / 1000000.0, cAccount.nAccountBalance / 1000000.0);
+			printf("[ACCOUNT] Account: %s | Credit: %f NIRO | Balance: %f NIRO\n", cAccount.cKey.c_str(), nCredit / 1000000.0, cAccount.nAccountBalance / 1000000.0);
 		}
 		
 		/** Any Remainder of the Rewards give to Blockfinder. **/
@@ -288,7 +297,7 @@ namespace Core
 			cAccount.nAccountBalance += (nReward - nTotalReward);
 			AccountDB.UpdateRecord(cAccount);
 			
-			printf("[ACCOUNT] Block Finder Bonus to %s of %f CSD\n", LAST_ROUND_BLOCKFINDER.c_str(), (nReward - nTotalReward) / 1000000.0 );
+			printf("[ACCOUNT] Block Finder Additional Credit to %s of %f NIRO\n", LAST_ROUND_BLOCKFINDER.c_str(), (nReward - nTotalReward) / 1000000.0 );
 		}
 		
 		/** Commit the New Block Record to the Block Database. **/
@@ -300,7 +309,7 @@ namespace Core
 		AccountDB.WriteToDisk();
 		
 		
-		printf("[ACCOUNT] Balances Updated. Total Round Weight = %f | Total Round Reward: %f CSD\n", nTotalWeight / 1000000.0, nReward / 1000000.0);
+		printf("[ACCOUNT] Balances Updated. Total Round Weight = %f | Total Round Reward: %f NIRO\n", nTotalWeight / 1000000.0, nReward / 1000000.0);
 		printf("\n---------------------------------------------------\n\n");
 	}
 	
@@ -353,7 +362,7 @@ namespace Core
 		return DAEMON_CONNECTIONS[nIndex];
 	}
 	
-	/** Thread to Determine what Block and Rewards the Coinshield Network is on. **/
+	/** Thread to Determine what Block and Rewards the Niro Network is on. **/
 	void OrphanThread()
 	{
 		printf("[MASTER] Initialized Orphan Thread\n");
@@ -561,7 +570,7 @@ namespace Core
 				if(nCurrentRound > 1 && fCoinbasePending)
 				{
 					
-					cGlobalCoinbase.nPoolFee = (nRoundReward * 0.02);
+					cGlobalCoinbase.nPoolFee = (nRoundReward * lfPoolFee);
 					cGlobalCoinbase.Reset(nRoundReward - cGlobalCoinbase.nPoolFee);
 					
 					
@@ -571,7 +580,7 @@ namespace Core
 						/** Read the Account Record from the Database. **/
 						LLD::Account cAccount = AccountDB.GetRecord(vAccounts[nIndex]);
 						
-						/** Only add a Payout if Above the 0 CSD Threshold. **/
+						/** Only add a Payout if Above the 0 NIRO Threshold. **/
 						if(cAccount.nAccountBalance > 0)
 						{
 							int nValue = cGlobalCoinbase.AddTransaction(vAccounts[nIndex], cAccount.nAccountBalance);
@@ -584,7 +593,7 @@ namespace Core
 						}
 					}
 						
-					/** Add CSD Block Finder Bonus [On top of Larger Weight] on Rounds where Coinbase is Incomplete. **/
+					/** Add NIRO Block Finder Bonus [On top of Larger Weight] on Rounds where Coinbase is Incomplete. **/
 					if(!cGlobalCoinbase.IsComplete())
 					{
 						int nBonus = cGlobalCoinbase.GetRemainder();
@@ -595,9 +604,11 @@ namespace Core
 					CLIENT->SetCoinbase();
 				}
 				else
+                {
 					fCoinbasePending = false;
-				
-				printf("[DAEMON] Round %u Block %u Rewards %f CSD\n", nCurrentRound, nBestHeight, nRoundReward / 1000000.0);
+                    ResetDaemons();
+                }
+				printf("[DAEMON] Round %u Block %u Rewards %f NIRO\n", nCurrentRound, nBestHeight, nRoundReward / 1000000.0);
 			}
 		}
 	}

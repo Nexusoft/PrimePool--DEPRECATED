@@ -253,7 +253,7 @@ namespace Core
 	 * Script-hash-addresses have version 117 (or 196 testnet).
 	 * The data vector contains RIPEMD160(SHA256(cscript)), where cscript is the serialized redemption script.
 	 */
-	class CoinshieldAddress : public CBase58Data
+	class NexusAddress : public CBase58Data
 	{
 	public:
 		enum
@@ -304,26 +304,26 @@ namespace Core
 			return nVersion == SCRIPT_ADDRESS;
 		}
 
-		CoinshieldAddress()
+		NexusAddress()
 		{
 		}
 
-		CoinshieldAddress(uint256 hash256In)
+		NexusAddress(uint256 hash256In)
 		{
 			SetHash256(hash256In);
 		}
 
-		CoinshieldAddress(const std::vector<unsigned char>& vchPubKey)
+		NexusAddress(const std::vector<unsigned char>& vchPubKey)
 		{
 			SetPubKey(vchPubKey);
 		}
 
-		CoinshieldAddress(const std::string& strAddress)
+		NexusAddress(const std::string& strAddress)
 		{
 			SetString(strAddress);
 		}
 
-		CoinshieldAddress(const char* pszAddress)
+		NexusAddress(const char* pszAddress)
 		{
 			SetString(pszAddress);
 		}

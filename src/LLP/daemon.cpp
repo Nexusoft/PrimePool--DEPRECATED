@@ -124,7 +124,7 @@ namespace LLP
 		while(!CLIENT)
 			Sleep(10);
 			
-		printf("[DAEMONS] Initialized Daemon Handle Thread %u\n", ID);
+		//printf("[DAEMONS] Initialized Daemon Handle Thread %u\n", ID);
 		LLP::Timer TIMER;
 		loop
 		{
@@ -172,7 +172,7 @@ namespace LLP
 				/** If a Block was Accepted by the Network, start a new Round. **/
 				if(PACKET.HEADER == CLIENT->GOOD)
 				{
-					printf("[DAEMON] Block %s Accepted by Coinshield Network on Handle %u\n", Core::hashBlockSubmission.ToString().substr(0, 20).c_str(), ID);
+					printf("[DAEMON] Block %s Accepted by Niro Network on Handle %u\n", Core::hashBlockSubmission.ToString().substr(0, 20).c_str(), ID);
 					Core::NewRound();
 					
 					Core::fSubmittingBlock = false;
@@ -180,12 +180,12 @@ namespace LLP
 					
 				else if(PACKET.HEADER == CLIENT->FAIL)
 				{
-					printf("[DAEMON] Block Rejected by Coinshield Network on Handle %u\n", ID);
+					printf("[DAEMON] Block Rejected by Niro Network on Handle %u\n", ID);
 					Core::fSubmittingBlock = false;
 				}
 				else if(PACKET.HEADER == CLIENT->COINBASE_SET)
 				{
-					printf("[DAEMON] Coinbase Transaction Set on Handle %u\n", ID);
+					//printf("[DAEMON] Coinbase Transaction Set on Handle %u\n", ID);
 					
 					fCoinbasePending = false;
 				}
@@ -242,7 +242,7 @@ namespace LLP
 				fNewBlock = false;
 				
 				NewBlock();
-				printf("[DAEMON] Coinshield Network: New Block | Reset Daemon Handle %u\n", ID);
+				//printf("[DAEMON] Niro Network: New Block | Reset Daemon Handle %u\n", ID);
 				
 				/** Set the new Coinbase Transaction. **/
 				if(Core::nCurrentRound > 1)

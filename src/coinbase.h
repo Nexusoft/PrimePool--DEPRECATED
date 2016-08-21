@@ -20,7 +20,7 @@ class Coinbase
 	
 	/** Add Output to the Transaction. **/
 	void AddOutput(std::string nAddress, uint64 nValue)
-	{
+	{       
 		if(!mapOutputs.count(nAddress))
 			mapOutputs[nAddress] = 0;
 			
@@ -54,7 +54,7 @@ public:
 		return nMaxValue - nCurrentValue;
 	}
 	
-	/** Return the Remainding CSD to complete the Transaction. **/
+	/** Return the Remainding NIRO to complete the Transaction. **/
 	int GetRemainder(){ return nMaxValue - nCurrentValue; };
 	
 	

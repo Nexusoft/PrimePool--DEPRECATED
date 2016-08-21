@@ -269,14 +269,19 @@ namespace LLP
 					
 					/** Initialize DDOS Protection for Incoming IP Address. **/
 					std::vector<unsigned char> BYTES(4, 0);
-					sscanf(SOCKET->remote_endpoint().address().to_string().c_str(), "%u.%u.%u.%u", &BYTES[0], &BYTES[1], &BYTES[2], &BYTES[3]);
+                    std::string IPADDRESS = SOCKET->remote_endpoint().address().to_string();
+					sscanf(IPADDRESS.c_str(), "%u.%u.%u.%u", &BYTES[0], &BYTES[1], &BYTES[2], &BYTES[3]);
 					
 					unsigned int ADDRESS = (BYTES[0] << 24) + (BYTES[1] << 16) + (BYTES[2] << 8) + BYTES[3];
 					
 					{ //LOCK(DDOS_MUTEX);
 						if(!DDOS_MAP.count(ADDRESS))
 							DDOS_MAP[ADDRESS] = new DDOS_Filter(30);
-							
+                            
+                        // ban if on the banned IP list
+                        if( fDDOS && IsBannedIPAddress( IPADDRESS ))
+							DDOS_MAP[ADDRESS]->Ban();                            
+                            
 						/** DDOS Operations: Only executed when DDOS is enabled. **/
 						if(fDDOS && DDOS_MAP[ADDRESS]->Banned())
 						{
