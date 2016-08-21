@@ -110,8 +110,13 @@ inline std::vector<unsigned char> uint2bytes(unsigned int UINT)
 			
 			
 /** Convert a byte stream into unsigned integer 32 bit. **/	
-inline unsigned int bytes2uint(std::vector<unsigned char> BYTES, int nOffset = 0) { return (BYTES[0 + nOffset] << 24) + (BYTES[1 + nOffset] << 16) + (BYTES[2 + nOffset] << 8) + BYTES[3 + nOffset]; }
-			
+inline unsigned int bytes2uint(std::vector<unsigned char> BYTES, int nOffset = 0) 
+{
+	if(BYTES.size() < nOffset + 4)
+		return 0;
+	
+	return (BYTES[0 + nOffset] << 24) + (BYTES[1 + nOffset] << 16) + (BYTES[2 + nOffset] << 8) + BYTES[3 + nOffset]; 
+}		
 			
 /** Convert a 64 bit Unsigned Integer to Byte Vector using Bitwise Shifts. **/
 inline std::vector<unsigned char> uint2bytes64(uint64 UINT)

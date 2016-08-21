@@ -14,7 +14,7 @@ namespace Core
 
 	/** Coinbase Transaction for this Block. **/
 	Coinbase cGlobalCoinbase;
-	std::string POOL_VERSION = "1.0.0";
+	std::string POOL_VERSION = "1.0.1";
 	
 
 	/** Wallet Connection Variables. **/
@@ -107,7 +107,7 @@ namespace Core
 		std::vector<std::string> vAccounts = GetSortedAccounts();
 		for( int nIndex = 0; nIndex < vAccounts.size(); nIndex++)
 		{
-			CoinshieldAddress cAddress(vAccounts[nIndex]);
+			NexusAddress cAddress(vAccounts[nIndex]);
 			if(!cAddress.IsValid())
 			{
 				printf("[DATABASE] Erasing Invalid Record: %s\n", vAccounts[nIndex].c_str());

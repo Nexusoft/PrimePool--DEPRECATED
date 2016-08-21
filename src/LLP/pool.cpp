@@ -53,32 +53,35 @@ namespace LLP
 			/** Check a Block Packet once the Header has been Read. **/
 			if(fDDOS)
 			{
-				if(PACKET.HEADER == SUBMIT_SHARE && PACKET.LENGTH > 136)
-					DDOS->Ban();
+				if(PACKET.LENGTH > 136)
+					DDOS->Ban("Max Packet Size Exceeded");
+				
+				if(PACKET.HEADER == SUBMIT_SHARE && PACKET.LENGTH != 136)
+					DDOS->Ban("Packet of Share not 136 Bytes");
 					
 				if(PACKET.HEADER == LOGIN && PACKET.LENGTH > 55)
-					DDOS->Ban();
+					DDOS->Ban("Login Message too Large");
 					
 				if(PACKET.HEADER == BLOCK_DATA)
-					DDOS->Ban();
+					DDOS->Ban("Received Block Data Header. Invalid as Request");
 					
 				if(PACKET.HEADER == ACCOUNT_BALANCE)
-					DDOS->Ban();
+					DDOS->Ban("Received Account Balance Header. Inavlid as Request");
 					
 				if(PACKET.HEADER == PENDING_PAYOUT)
-					DDOS->Ban();
+					DDOS->Ban("Recieved Pending Payout Header. Invald as Request");
 					
 				if(PACKET.HEADER == ACCEPT)
-					DDOS->Ban();
+					DDOS->Ban("Received Share Accepted Header. Invalid as Request");
 				
 				if(PACKET.HEADER == REJECT)
-					DDOS->Ban();
+					DDOS->Ban("Received Share Rejected Header. Invalid as Request.");
 					
 				if(PACKET.HEADER == BLOCK)
-					DDOS->Ban();
+					DDOS->Ban("Received Block Header. Invalid as Request.");
 					
 				if(PACKET.HEADER == STALE)
-					DDOS->Ban();
+					DDOS->Ban("Recieved Stale Share Header. Invalid as Request");
 			}
 				
 			return;
@@ -170,13 +173,13 @@ namespace LLP
 			}
 			
 			ADDRESS = bytes2string(PACKET.DATA);
-			Core::CoinshieldAddress cAddress(ADDRESS);
+			Core::NexusAddress cAddress(ADDRESS);
 			
 			if(!cAddress.IsValid() )
 			{
 				printf("[THREAD] Pool LLP: Bad Account %s\n", ADDRESS.c_str());
 				if(fDDOS)
-					DDOS->Ban();
+					DDOS->Ban("Invalid Nexus Address on Login");
 					
 				return false;
 			}
@@ -205,7 +208,7 @@ namespace LLP
                     SaveBannedIPAddress(ip_address);
                 }
                 
-                DDOS->Ban();
+                DDOS->Ban("Account is Banned");
                 
                 fLoggedIn = false;
                 

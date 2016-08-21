@@ -124,7 +124,7 @@ namespace LLP
 		while(!CLIENT)
 			Sleep(10);
 			
-		printf("[DAEMONS] Initialized Daemon Handle Thread %u\n", ID);
+		//printf("[DAEMONS] Initialized Daemon Handle Thread %u\n", ID);
 		LLP::Timer TIMER;
 		loop
 		{
@@ -185,7 +185,7 @@ namespace LLP
 				}
 				else if(PACKET.HEADER == CLIENT->COINBASE_SET)
 				{
-					printf("[DAEMON] Coinbase Transaction Set on Handle %u\n", ID);
+					//printf("[DAEMON] Coinbase Transaction Set on Handle %u\n", ID);
 					
 					fCoinbasePending = false;
 				}
@@ -242,7 +242,7 @@ namespace LLP
 				fNewBlock = false;
 				
 				NewBlock();
-				printf("[DAEMON] Niro Network: New Block | Reset Daemon Handle %u\n", ID);
+				//printf("[DAEMON] Niro Network: New Block | Reset Daemon Handle %u\n", ID);
 				
 				/** Set the new Coinbase Transaction. **/
 				if(Core::nCurrentRound > 1)
