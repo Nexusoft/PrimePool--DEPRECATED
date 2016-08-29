@@ -17,6 +17,8 @@ int main(int argc, char *argv[])
 	Core::StartPool(nPort, nDaemonThreads, nPoolThreads, (bool)ddos, rScore, cScore, nShare, nPoolFee);
 	
 	loop { Sleep(10); }
+
+	printf("Exiting");
 	
 	return 0;
 }

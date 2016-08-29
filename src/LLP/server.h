@@ -276,11 +276,11 @@ namespace LLP
 					
 					{ //LOCK(DDOS_MUTEX);
 						if(!DDOS_MAP.count(ADDRESS))
-							DDOS_MAP[ADDRESS] = new DDOS_Filter(30);
+							DDOS_MAP[ADDRESS] = new DDOS_Filter(30, IPADDRESS);
                             
                         // ban if on the banned IP list
                         if( fDDOS && IsBannedIPAddress( IPADDRESS ))
-							DDOS_MAP[ADDRESS]->Ban();                            
+							DDOS_MAP[ADDRESS]->Ban("Banned IP Address");                            
                             
 						/** DDOS Operations: Only executed when DDOS is enabled. **/
 						if(fDDOS && DDOS_MAP[ADDRESS]->Banned())

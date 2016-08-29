@@ -164,4 +164,8 @@ bool IsBannedIPAddress( std::string ip_address);
 
 bool IsBannedAccount( std::string account );
 
+void IncConnectionCount( std::string ADDRESS );
+void DecConnectionCount( std::string ADDRESS );
+int GetConnectionCount( std::string ADDRESS );
+
 #endif

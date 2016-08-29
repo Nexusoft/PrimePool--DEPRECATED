@@ -80,7 +80,7 @@ namespace LLP
 		CONNECTIONS[nID] = pConnection;
 		nTotalConnections++;
 		
-		printf("[DAEMON] Pool Connection %i Added to Daemon Handle %u\n", nID, ID);
+		printf("[DAEMON] Pool Connection %i Added to Daemon Handle %u.  IP: %s\n", nID, ID, CONNECTIONS[nID]->GetIPAddress().c_str());
 		return nID;
 	}
 	
@@ -100,11 +100,14 @@ namespace LLP
 	void DaemonHandle::RemoveConnection(int nIndex)
 	{
 		LOCK(CONNECTION_MUTEX);
+		
+		if( CONNECTIONS[nIndex]->ADDRESS != "")
+			DecConnectionCount(CONNECTIONS[nIndex]->ADDRESS);
+
+		printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u.  IP: %s\n", nIndex, ID, CONNECTIONS[nIndex]->GetIPAddress().c_str());
+		
 		CONNECTIONS[nIndex] = NULL;
-		
 		nTotalConnections--;
-		
-		printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u\n", nIndex, ID);
 	}
 		
 

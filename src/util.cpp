@@ -109,3 +109,30 @@ bool IsBannedAccount( std::string account )
     LoadBannedAccounts();
     return std::find(BANNED_ACCOUNTS.begin(), BANNED_ACCOUNTS.end(), account) != BANNED_ACCOUNTS.end() ; 
 }
+
+
+static std::map<std::string, int> CONNECTIONS_BY_ADDRESS;
+static boost::mutex CONNECTIONS_BY_ADDRESS_MUTEX;
+void IncConnectionCount( std::string ADDRESS )
+{
+    CONNECTIONS_BY_ADDRESS_MUTEX.lock();
+    CONNECTIONS_BY_ADDRESS[ADDRESS]++;
+    CONNECTIONS_BY_ADDRESS_MUTEX.unlock();
+}
+
+void DecConnectionCount( std::string ADDRESS )
+{
+    CONNECTIONS_BY_ADDRESS_MUTEX.lock();
+    CONNECTIONS_BY_ADDRESS[ADDRESS]--;
+    CONNECTIONS_BY_ADDRESS_MUTEX.unlock();
+}
+
+int GetConnectionCount( std::string ADDRESS )
+{
+    int nCount = 0;
+    CONNECTIONS_BY_ADDRESS_MUTEX.lock();
+    nCount = CONNECTIONS_BY_ADDRESS[ADDRESS];
+    CONNECTIONS_BY_ADDRESS_MUTEX.unlock();
+
+    return nCount;
+}

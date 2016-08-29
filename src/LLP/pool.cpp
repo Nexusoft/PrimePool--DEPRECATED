@@ -174,6 +174,8 @@ namespace LLP
 			
 			ADDRESS = bytes2string(PACKET.DATA);
 			Core::NexusAddress cAddress(ADDRESS);
+
+			IncConnectionCount(ADDRESS);
 			
 			if(!cAddress.IsValid() )
 			{
@@ -184,9 +186,9 @@ namespace LLP
 				return false;
 			}
             
-            std::string ip_address = SOCKET->remote_endpoint().address().to_string();
-			
-			printf("[THREAD] Pool Login: %s\t IP:%s\n", ADDRESS.c_str(), ip_address.c_str() );
+            std::string ip_address = GetIPAddress();
+
+			printf("[THREAD] Pool Login: %s\t IP:%s\t (%d connections)\n", ADDRESS.c_str(), ip_address.c_str(), GetConnectionCount(ADDRESS) );
 			if(!Core::AccountDB.HasKey(ADDRESS))
 			{
 				LLD::Account cNewAccount(ADDRESS);
@@ -196,6 +198,7 @@ namespace LLP
 				printf("[ACCOUNT] New Account %s\n", ADDRESS.c_str());
 				printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
 			}
+
             
             if(IsBannedAccount(ADDRESS) )
             {
