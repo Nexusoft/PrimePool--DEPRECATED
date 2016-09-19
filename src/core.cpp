@@ -485,7 +485,9 @@ namespace Core
 			
 			if(METER_TIMER.ElapsedMilliseconds() > 10000)
 			{
-				
+				// update the number of connections from the server so we have it available for stats ouput
+				nConnections = SERVER->nGlobalConnections;
+
 				printf("[METERS] 4 ch: x %f | 5 ch: x %f | 6 ch: x %f | 7 ch: x %f\n", (double)nDifficultyShares[0] / nDifficultyShares[1],
 				(double)nDifficultyShares[1] / nDifficultyShares[2], (double)nDifficultyShares[2] / nDifficultyShares[3], (double)nDifficultyShares[3] / nDifficultyShares[4]);
 

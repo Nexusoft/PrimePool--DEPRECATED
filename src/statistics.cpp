@@ -52,7 +52,7 @@ std::string Statistics::GetPoolStats()
 
     oJSONData.push_back( Pair( "time_since_block", str(boost::format("%dm %ds") % lMinutes % lSeconds )) );
     
-    oJSONData.push_back( Pair( "active_connections", (uint64_t)Core::SERVER->nGlobalConnections ) );
+    oJSONData.push_back( Pair( "active_connections", (uint64_t)Core::nConnections ) );
 
     json_spirit::Array oNextPayments;
 
