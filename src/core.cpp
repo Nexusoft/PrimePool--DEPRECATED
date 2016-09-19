@@ -492,7 +492,6 @@ namespace Core
 				//write stats to file
 				std::ofstream lPoolStatsFile("pool_stats.json", std::ios::out );
 				lPoolStatsFile << Statistics::GetPoolStats();
-				lPoolStatsFile << Statistics::GetAccountData();
 				lPoolStatsFile.close();
 
 				std::ofstream lAccountDataFile("account_data.json", std::ios::out );
