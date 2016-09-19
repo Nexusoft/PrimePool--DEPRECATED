@@ -4,7 +4,7 @@
 
 DEFS=-DBOOST_SPIRIT_THREADSAFE -DBOOST_THREAD_USE_LIB
 
-DEFS += $(addprefix -I,$(CURDIR)/src $(CURDIR)/src/build $(CURDIR)/src/hash $(BOOST_INCLUDE_PATH) $(OPENSSL_INCLUDE_PATH))
+DEFS += $(addprefix -I,$(CURDIR)/src $(CURDIR)/src/build $(CURDIR)/src/hash $(CURDIR)/src/json $(BOOST_INCLUDE_PATH) $(OPENSSL_INCLUDE_PATH))
 LIBS = -lc -lpthread $(addprefix -L,$(BOOST_LIB_PATH) $(BDB_LIB_PATH) $(OPENSSL_LIB_PATH))
 
 #For Boost 1.55 Builds Uncomment the Following
@@ -40,8 +40,8 @@ OBJS= \
 	build/daemon.o \
 	build/webui.o \
 	build/pool.o \
-	build/util.o
-
+	build/util.o \
+	build/statistics.o
 
 all: pool
 

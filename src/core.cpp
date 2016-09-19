@@ -8,6 +8,7 @@
 #include "base58.h"
 #include "util.h"
 #include <algorithm>
+#include "statistics.h"
 
 namespace Core
 {
@@ -72,6 +73,10 @@ namespace Core
 	
 	/** The Address for the Last Round. **/
 	std::string LAST_ROUND_BLOCKFINDER = "2S4PPSznWfPVLtPJNpi8Ly46Wft3wGbayGkhaGzKLVcepmrhKTP";
+
+	unsigned int nConnections = 0;
+	unsigned int nLastBlockFound = 0;
+	LLP::Timer LAST_BLOCK_FOUND_TIMER;
 	
 	
 	/** Used to Sort the Database Account Keys by Balance. **/
@@ -442,7 +447,8 @@ namespace Core
 		
 		LLP::Timer METER_TIMER;
 		METER_TIMER.Start();
-		
+
+		LAST_BLOCK_FOUND_TIMER.Start();
 		
 		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection("127.0.0.1", "9325");
 		loop
@@ -482,7 +488,17 @@ namespace Core
 				
 				printf("[METERS] 4 ch: x %f | 5 ch: x %f | 6 ch: x %f | 7 ch: x %f\n", (double)nDifficultyShares[0] / nDifficultyShares[1],
 				(double)nDifficultyShares[1] / nDifficultyShares[2], (double)nDifficultyShares[2] / nDifficultyShares[3], (double)nDifficultyShares[3] / nDifficultyShares[4]);
-				
+
+				//write stats to file
+				std::ofstream lPoolStatsFile("pool_stats.json", std::ios::out );
+				lPoolStatsFile << Statistics::GetPoolStats();
+				lPoolStatsFile << Statistics::GetAccountData();
+				lPoolStatsFile.close();
+
+				std::ofstream lAccountDataFile("account_data.json", std::ios::out );
+				lAccountDataFile << Statistics::GetAccountData();
+				lAccountDataFile.close();
+
 				METER_TIMER.Reset();
 			}
 			

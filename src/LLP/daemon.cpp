@@ -270,19 +270,23 @@ namespace LLP
 						{
 							Core::fSubmittingBlock = true;
 							Core::hashBlockSubmission = CONNECTIONS[nIndex]->SUBMISSION_BLOCK->GetHash();
-							Core::LAST_ROUND_BLOCKFINDER = CONNECTIONS[nIndex]->ADDRESS;
+							 
 							
 							/** Submit the Block to Network if it is Valid. **/
 							if(CONNECTIONS[nIndex]->SUBMISSION_BLOCK->nHeight == Core::nBestHeight)
 							{
 								CLIENT->SubmitBlock(CONNECTIONS[nIndex]->SUBMISSION_BLOCK->hashMerkleRoot, CONNECTIONS[nIndex]->SUBMISSION_BLOCK->nNonce);
-									
+
+								Core::LAST_BLOCK_FOUND_TIMER.Reset();
+								Core::LAST_ROUND_BLOCKFINDER = CONNECTIONS[nIndex]->ADDRESS;
+								Core::nLastBlockFound = CONNECTIONS[nIndex]->SUBMISSION_BLOCK->nHeight;
+
 								printf("[DAEMON] Submitting Block for Address %s on Handle %u\n", CONNECTIONS[nIndex]->ADDRESS.c_str(), ID);
 							}
 							else
 								printf("[DAEMON] Stale Block Submitted on Handle %u\n", ID);
-								
-								
+
+
 							/** Reset the Submission Block Pointer. **/
 							CONNECTIONS[nIndex]->SUBMISSION_BLOCK = NULL;
 							break;

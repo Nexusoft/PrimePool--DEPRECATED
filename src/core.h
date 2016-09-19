@@ -69,11 +69,16 @@ namespace Core
 	
 	/** The current Round for the Pool. **/
 	extern unsigned int nCurrentRound;
-	
+
+	/** The current found reward**/
+	extern uint64 nRoundReward;
 	
 	/** The Address of the Last Blockfinder. **/
 	extern std::string LAST_ROUND_BLOCKFINDER;
 	
+	/** Last block information **/
+	extern unsigned int nLastBlockFound;
+	extern LLP::Timer LAST_BLOCK_FOUND_TIMER;
 	
 	/** Map to store DDOS scores by Address. **/
 	extern std::map<std::string, LLP::DDOS_Filter*> DDOS_BY_ADDRESS;

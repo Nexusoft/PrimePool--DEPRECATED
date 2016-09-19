@@ -227,7 +227,7 @@ namespace LLP
 					
 				double RPS = (double) TotalRequests() / TIMER.Elapsed();
 				printf("[METERS] LLP Running at %f Requests per Second with %u Connections.\n", RPS, nGlobalConnections);
-				
+
 				TIMER.Reset();
 				ClearRequests();
 			}
