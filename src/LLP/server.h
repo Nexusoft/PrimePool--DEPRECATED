@@ -221,12 +221,12 @@ namespace LLP
 			{	
 				Sleep(10000);
 				
-				unsigned int nGlobalConnections = 0;
+				Core::nConnections = 0;
 				for(int nIndex = 0; nIndex < MAX_THREADS; nIndex++)
-					nGlobalConnections += DATA_THREADS[nIndex]->nConnections;
+					Core::nConnections += DATA_THREADS[nIndex]->nConnections;
 					
 				double RPS = (double) TotalRequests() / TIMER.Elapsed();
-				printf("[METERS] LLP Running at %f Requests per Second with %u Connections.\n", RPS, nGlobalConnections);
+				printf("[METERS] LLP Running at %f Requests per Second with %u Connections.\n", RPS, Core::nConnections);
 
 				TIMER.Reset();
 				ClearRequests();

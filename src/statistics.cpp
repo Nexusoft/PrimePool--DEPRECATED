@@ -55,10 +55,10 @@ std::string Statistics::GetPoolStats()
     oJSONData.push_back( Pair( "active_connections", (uint64_t)Core::nConnections ) );
 
     json_spirit::Array oNextPayments;
-    json_spirit::Object oNextPayment;
 
     for(std::map<std::string, uint64>::iterator nIterator = Core::cGlobalCoinbase.mapOutputs.begin(); nIterator != Core::cGlobalCoinbase.mapOutputs.end(); nIterator++)
     {
+        json_spirit::Object oNextPayment;
         oNextPayment.push_back( Pair( "address", nIterator->first.c_str() ) );
         oNextPayment.push_back( Pair( "amount", (uint64_t) nIterator->second ) );
 	    oNextPayments.push_back(oNextPayment );
