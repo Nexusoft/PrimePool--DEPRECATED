@@ -52,7 +52,7 @@ std::string Statistics::GetPoolStats()
 
     oJSONData.push_back( Pair( "time_since_block", str(boost::format("%dm %ds") % lMinutes % lSeconds )) );
     
-    oJSONData.push_back( Pair( "active_connections", (uint64_t)Core::nConnections ) );
+    oJSONData.push_back( Pair( "active_connections", (uint64_t)Core::SERVER->nGlobalConnections ) );
 
     json_spirit::Array oNextPayments;
 
@@ -86,7 +86,7 @@ json_spirit::Object Statistics::GetAccountDataJSON(std::string strAddress )
         int lConnections = GetConnectionCount(strAddress);
 
         oAccountData.push_back( Pair( "address", strAddress ) );
-        oAccountData.push_back( Pair( "connections", (uint64_t) nConnections ) );
+        oAccountData.push_back( Pair( "connections", (uint64_t) lConnections ) );
         oAccountData.push_back( Pair( "round_shares", (uint64_t) nRoundshares ) );
         oAccountData.push_back( Pair( "balance", (uint64_t) nBalance ) );
         oAccountData.push_back( Pair( "pending_payout", (uint64_t) nPendingPayout ) );

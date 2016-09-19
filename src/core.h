@@ -3,6 +3,9 @@
 
 #include "bignum.h"
 #include "util.h"
+#include "LLP/server.h"
+#include "LLP/pool.h"
+#include "LLP/webui.h"
 #include <gmp.h>
 
 class Coinbase;
@@ -17,7 +20,10 @@ namespace LLD
 namespace LLP { class DaemonHandle; class DaemonConnection; class Timer; class DDOS_Filter; }
 namespace Core
 {	
-	
+	extern LLP::Server<LLP::PoolConnection>* SERVER;
+	extern LLP::Server<LLP::UiConnection>* WEBSERVER;
+
+
 	/** Global Best Height Tracker. Keeps track of Current Block. **/
 	extern unsigned int nBestHeight;
 	

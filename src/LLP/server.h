@@ -172,6 +172,7 @@ namespace LLP
 		
 	public:
 		int PORT, MAX_THREADS;
+		unsigned int nGlobalConnections = 0;
 		
 		/** The data type to keep track of current running threads. **/
 		std::vector< DataThread<ProtocolType>* > DATA_THREADS;
@@ -221,12 +222,12 @@ namespace LLP
 			{	
 				Sleep(10000);
 				
-				Core::nConnections = 0;
+				nGlobalConnections = 0;
 				for(int nIndex = 0; nIndex < MAX_THREADS; nIndex++)
-					Core::nConnections += DATA_THREADS[nIndex]->nConnections;
+					nGlobalConnections += DATA_THREADS[nIndex]->nConnections;
 					
 				double RPS = (double) TotalRequests() / TIMER.Elapsed();
-				printf("[METERS] LLP Running at %f Requests per Second with %u Connections.\n", RPS, Core::nConnections);
+				printf("[METERS] LLP Running at %f Requests per Second with %u Connections.\n", RPS, nGlobalConnections);
 
 				TIMER.Reset();
 				ClearRequests();
