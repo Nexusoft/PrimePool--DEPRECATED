@@ -429,10 +429,8 @@ namespace Core
 			if(TIMER.ElapsedMilliseconds() > 20000)
 			{
 				std::vector<uint1024> vKeys = BlockDB.GetKeys();
-				int nNumToCheck = vKeys.size() >= 5 ? 5 : vKeys.size();
-				printf("Checking last %d Blocks \n", nNumToCheck );
-				for(int nIndex = vKeys.size() - nNumToCheck; nIndex < vKeys.size(); nIndex++)
-					if(BlockDB.GetRecord(vKeys[nIndex]).nRound > 0) // previously checked and orphaned rounds will be set to 0 so skip these
+				for(int nIndex = 0; nIndex < vKeys.size(); nIndex++)
+					if(BlockDB.GetRecord(vKeys[nIndex]).nRound >= nCurrentRound -5)
 						CLIENT->CheckBlock(vKeys[nIndex]);
 					
 				TIMER.Reset();
