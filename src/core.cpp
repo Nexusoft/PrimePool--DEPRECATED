@@ -429,6 +429,7 @@ namespace Core
 			if(TIMER.ElapsedMilliseconds() > 20000)
 			{
 				std::vector<uint1024> vKeys = BlockDB.GetKeys();
+				printf("Checking last 5 blocks...\n");
 				for(int nIndex = 0; nIndex < vKeys.size(); nIndex++)
 					if(BlockDB.GetRecord(vKeys[nIndex]).nRound >= nCurrentRound -5)
 						CLIENT->CheckBlock(vKeys[nIndex]);
