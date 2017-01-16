@@ -260,7 +260,10 @@ namespace LLP
 		{ 
 			LOCK(BLOCK_MUTEX); 
 			nBlockRequests++; 
-			
+
+			if(fDDOS)
+					DDOS->rSCORE += 1;
+
 			return true; 
 		}
 		
