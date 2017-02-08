@@ -32,7 +32,7 @@ namespace LLP
 			SUBMIT_SHARE     = 2,
 			ACCOUNT_BALANCE  = 3,
 			PENDING_PAYOUT   = 4,
-			
+			SUBMIT_PPS     	 = 5,			
 					
 			/** REQUEST PACKETS **/
 			GET_BLOCK    = 129,

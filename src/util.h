@@ -167,6 +167,29 @@ inline const std::string currentDateTime()
     return buf;
 }
 
+/** Convert double into Byte Vector **/
+inline std::vector<unsigned char> double2bytes(double DOUBLE)
+{
+    union {
+        double DOUBLE;
+        uint64 UINT64;
+    } u;
+    u.DOUBLE = DOUBLE;
+
+    return uint2bytes64(u.UINT64);
+}
+
+/** Convert Byte Vector into double **/
+inline double bytes2double(std::vector<unsigned char> BYTES)
+{
+    uint64 n64 = bytes2uint64(BYTES);
+    union {
+        double DOUBLE;
+        uint64 UINT64;
+    } u;
+    u.UINT64 = n64;
+    return u.DOUBLE;
+}
 
 void LoadBannedAccounts();
 
