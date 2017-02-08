@@ -61,6 +61,9 @@ namespace LLP
 					
 				if(PACKET.HEADER == LOGIN && PACKET.LENGTH > 55)
 					DDOS->Ban("Login Message too Large");
+
+				if(PACKET.HEADER == SUBMIT_PPS && PACKET.LENGTH != 16)
+					DDOS->Ban("Submit PPS Packet not 16 Bytes");
 					
 				if(PACKET.HEADER == BLOCK_DATA)
 					DDOS->Ban("Received Block Data Header. Invalid as Request");
@@ -419,6 +422,17 @@ namespace LLP
 			
 		/** Handle a Ping from the Pool Miner. **/
 		if(PACKET.HEADER == PING){ this->WritePacket(GetPacket(PING)); return true; }
+
+		if(PACKET.HEADER == SUBMIT_PPS)
+		{ 
+			// grab the current PPS from the miner
+			double PPS = bytes2double(std::vector<unsigned char>(PACKET.DATA.begin(), PACKET.DATA.end() - 8));	
+			double WPS = bytes2double(std::vector<unsigned char>(PACKET.DATA.begin() +8, PACKET.DATA.end()));	
+			
+			// TODO log the PPS/WPS values to database
+
+			this->WritePacket(GetPacket(PING)); return true; 
+		}
 			
 		return false;
 	}
