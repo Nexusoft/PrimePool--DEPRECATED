@@ -24,7 +24,7 @@ namespace Core
         StatsPersister(){}
         ~StatsPersister(){Destroy();}
 
-        /** Initialises the connection to the exteral persistence store**/
+        /** Initialises the connection to the external persistence store**/
         virtual void Init() {SERIESTIMER.Start(); tCurrentSeriesDateTime = time(0);;};
         virtual void Destroy(){};
 

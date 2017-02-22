@@ -38,10 +38,10 @@ namespace Core
 		printf("Wallet IP: %s \n", strWalletIP.c_str());
 		printf("Port: %i \n", nPort);
 
-        printf("Daemoon Threads: %i \n", nDaemonThreads);
+        printf("Daemon Threads: %i \n", nDaemonThreads);
 		printf("Pool Threads: %i \n", nPoolThreads);
 
-        printf("rScore: %i \n", bDDOS);
+        printf("bDDOS: %i \n", bDDOS);
         printf("rScore: %i \n", rScore);
         printf("cScore: %i \n", cScore);
         printf("Min Share Diff: %i \n", nShare);

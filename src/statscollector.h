@@ -208,8 +208,5 @@ namespace Core
 		
 	};
 
-	typedef std::map<std::string, std::map<unsigned int, AccountEarningTransaction> >::iterator AccountEarningIterator;
-	typedef std::map<unsigned int, AccountEarningTransaction>::reverse_iterator AccountEarningTransactionIterator;
-
 }
 #endif

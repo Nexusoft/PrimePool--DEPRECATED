@@ -19,7 +19,7 @@ MySQLStatsPersister::~MySQLStatsPersister()
 }
 
 
-/** Initialises the connection to the exteral persistence store**/
+/** Initialises the connection to the external persistence store**/
 void MySQLStatsPersister::Init() 
 {
     StatsPersister::Init();
