@@ -3,10 +3,11 @@
 #include "../core.h"
 #include "../util.h"
 #include "../base58.h"
-
+#include "../statscollector.h"
 #include "../LLD/record.h"
 #include <math.h>
 #include <boost/algorithm/string/predicate.hpp>
+
 
 namespace LLP
 {	
@@ -143,6 +144,8 @@ namespace LLP
 			/** Assign this thread to a Daemon Handle. **/
 			DAEMON = Core::FindDaemon();
 			nID = DAEMON->AssignConnection(this);
+
+			GUID = to_string(DAEMON->ID) +"_" +to_string(nID);
 			
 			return;
 		}
@@ -178,7 +181,7 @@ namespace LLP
 			ADDRESS = bytes2string(PACKET.DATA);
 			Core::NexusAddress cAddress(ADDRESS);
 
-			IncConnectionCount(ADDRESS);
+			Core::STATSCOLLECTOR.IncConnectionCount(ADDRESS, GUID);
 			
 			if(!cAddress.IsValid() )
 			{
@@ -191,7 +194,7 @@ namespace LLP
             
             std::string ip_address = GetIPAddress();
 
-			printf("[THREAD] Pool Login: %s\t IP:%s\t (%d connections)\n", ADDRESS.c_str(), ip_address.c_str(), GetConnectionCount(ADDRESS) );
+			printf("[THREAD] Pool Login: %s\t IP:%s\t (%d connections)\n", ADDRESS.c_str(), ip_address.c_str(), Core::STATSCOLLECTOR.GetConnectionCount(ADDRESS) );
 			if(!Core::AccountDB.HasKey(ADDRESS))
 			{
 				LLD::Account cNewAccount(ADDRESS);
@@ -427,7 +430,10 @@ namespace LLP
 		}
 			
 		/** Handle a Ping from the Pool Miner. **/
-		if(PACKET.HEADER == PING){ this->WritePacket(GetPacket(PING)); return true; }
+		if(PACKET.HEADER == PING)
+		{
+			this->WritePacket(GetPacket(PING)); return true; 
+		}
 
 		if(PACKET.HEADER == SUBMIT_PPS)
 		{ 
@@ -435,7 +441,7 @@ namespace LLP
 			double PPS = bytes2double(std::vector<unsigned char>(PACKET.DATA.begin(), PACKET.DATA.end() - 8));	
 			double WPS = bytes2double(std::vector<unsigned char>(PACKET.DATA.begin() +8, PACKET.DATA.end()));	
 			
-			// TODO log the PPS/WPS values to database
+			Core::STATSCOLLECTOR.UpdateConnectionData( ADDRESS, GUID, PPS, WPS);
 
 			this->WritePacket(GetPacket(PING)); return true; 
 		}

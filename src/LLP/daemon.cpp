@@ -3,6 +3,7 @@
 #include "../coinbase.h"
 #include "../core.h"
 #include "../util.h"
+#include "../statscollector.h"
 
 namespace LLP
 {
@@ -102,7 +103,7 @@ namespace LLP
 		LOCK(CONNECTION_MUTEX);
 		
 		if( CONNECTIONS[nIndex]->ADDRESS != "")
-			DecConnectionCount(CONNECTIONS[nIndex]->ADDRESS);
+			Core::STATSCOLLECTOR.DecConnectionCount(CONNECTIONS[nIndex]->ADDRESS, CONNECTIONS[nIndex]->GUID);
 
 		printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u.  IP: %s\n", nIndex, ID, CONNECTIONS[nIndex]->GetIPAddress().c_str());
 		
@@ -131,7 +132,7 @@ namespace LLP
 		LLP::Timer TIMER;
 		loop
 		{
-			Sleep(1);
+			Sleep(10);
 		
 			/** Attempt with best efforts to keep the Connection Alive. **/
 			if(!CLIENT->Connected() || CLIENT->Errors() || CLIENT->Timeout(60))

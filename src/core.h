@@ -4,8 +4,11 @@
 #include "bignum.h"
 #include "util.h"
 #include <gmp.h>
+#include "config.h"
+
 
 class Coinbase;
+
 
 namespace LLD
 {
@@ -17,7 +20,8 @@ namespace LLD
 namespace LLP { class DaemonHandle; class DaemonConnection; class Timer; class DDOS_Filter; }
 namespace Core
 {	
-	
+	class StatsCollector;
+
 	/** Global Best Height Tracker. Keeps track of Current Block. **/
 	extern unsigned int nBestHeight;
 	
@@ -52,8 +56,15 @@ namespace Core
 		inline uint1024 GetHash() const { return SK1024(BEGIN(nVersion), END(nBits)); }
 		inline CBigNum GetPrime() const { return CBigNum(GetHash() + nNonce); }
 	};
+
+	/** Pool Configuration **/
+	extern Config CONFIG; 
+
+	/** Statistics Collector **/
+	extern Core::StatsCollector STATSCOLLECTOR;
 	
-	
+	/** The IP of the wallet server **/
+	extern std::string WALLET_IP_ADDRESS;
 	
 	/** Global Declaration of the Coinbase Transaction. **/
 	extern Coinbase cGlobalCoinbase;
