@@ -1,0 +1,19 @@
+{
+    "wallet_ip" : "127.0.0.1",
+    "port" : 9549,
+    
+    "daemon_threads" : 10,
+    "pool_threads" : 20,
+    "enable_ddos" : "true",
+    "ddos_rscore" : 20,
+    "ddos_cscore" : 2,
+    "min_share" : 40000000,
+    "pool_fee" : 1,
+
+    "stats_db_server_ip" : "127.0.0.1",
+    "stats_db_server_port" : 3306,
+    "stats_db_username" : "nxspool",
+    "stats_db_password" : "nxspool",
+    "connection_stats_frequency" : 10,
+    "connection_stats_series_frequency" : 300
+}

@@ -12,6 +12,7 @@
 #include <gmp.h>
 #include "bignum.h"
 #include <fstream>
+#include <sstream>
 
 #define LOCK(a) boost::lock_guard<boost::mutex> lock(a)
 
@@ -25,14 +26,15 @@ typedef unsigned long long  uint64;
 int ConsoleOutput(const char* pszFormat, ...);
 
 #ifndef WIN32
-inline void Sleep(int64 n)
-{
+//inline void Sleep(int64 n)
+//{
     /*Boost has a year 2038 problem— if the request sleep time is past epoch+2^31 seconds the sleep returns instantly.
       So we clamp our sleeps here to 10 years and hope that boost is fixed by 2028.*/
-    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n>315576000000LL?315576000000LL:n));
-}
+//    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n>315576000000LL?315576000000LL:n));
+//}
+
+inline void Sleep(unsigned int nTime){ boost::this_thread::sleep(boost::posix_time::milliseconds(nTime)); }
 #endif
-//inline void Sleep(unsigned int nTime){ boost::this_thread::sleep(boost::posix_time::milliseconds(nTime)); }
 
 inline bignum2mpz(const BIGNUM *bn, mpz_t g)
 {
@@ -175,6 +177,53 @@ inline double bytes2double(std::vector<unsigned char> BYTES)
     } u;
     u.UINT64 = n64;
     return u.DOUBLE;
+}
+
+inline const std::string time2datetimestring(time_t nTime) 
+{
+    struct tm  tstruct;
+    char       buf[80];
+    tstruct = *gmtime(&nTime);
+    strftime(buf, sizeof(buf), "%Y-%m-%d.%X", &tstruct);
+
+    return buf;
+}
+
+// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+inline const std::string currentDateTime() 
+{
+    return time2datetimestring(time(0));
+}
+
+
+
+template < typename T > std::string to_string( const T& n )
+    {
+        std::ostringstream stm ;
+        stm << n ;
+        return stm.str() ;
+    }
+
+
+inline std::string stdprintf(const char *fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	char buf[32];
+	size_t n = std::vsnprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	// Static buffer large enough?
+	if (n < sizeof(buf)) {
+		return {buf, n};
+	}
+
+	// Static buffer too small
+	std::string s(n + 1, 0);
+	va_start(args, fmt);
+	std::vsnprintf(const_cast<char*>(s.data()), s.size(), fmt, args);
+	va_end(args);
+
+	return s;
 }
 
 void LoadBannedAccounts();

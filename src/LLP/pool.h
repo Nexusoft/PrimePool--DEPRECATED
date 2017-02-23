@@ -32,7 +32,7 @@ namespace LLP
 			SUBMIT_SHARE     = 2,
 			ACCOUNT_BALANCE  = 3,
 			PENDING_PAYOUT   = 4,
-			SUBMIT_PPS     	 = 5,			
+			SUBMIT_PPS     	 = 5,
 					
 			/** REQUEST PACKETS **/
 			GET_BLOCK    = 129,
@@ -80,6 +80,9 @@ namespace LLP
 		/** Address of Account Logged in on this Connection. **/
 		std::string ADDRESS;
 		
+		/** Unique ID of this connection within the server.  Composite of Daemon ID and connection ID **/
+		std::string GUID;
+
 		/** Block Set by Connection if it is Above Difficulty. **/
 		Core::CBlock* SUBMISSION_BLOCK = NULL;
 		

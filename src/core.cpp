@@ -8,9 +8,18 @@
 #include "base58.h"
 #include "util.h"
 #include <algorithm>
+#include "statscollector.h"
 
 namespace Core
 {
+	/** Pool Configuration **/
+	Config CONFIG; 
+
+	/** Statistics 	Collector **/
+	StatsCollector STATSCOLLECTOR;
+
+	/** The IP of the wallet server **/
+	std::string WALLET_IP_ADDRESS;
 
 	/** Coinbase Transaction for this Block. **/
 	Coinbase cGlobalCoinbase;
@@ -72,6 +81,10 @@ namespace Core
 	
 	/** The Address for the Last Round. **/
 	std::string LAST_ROUND_BLOCKFINDER = "2S4PPSznWfPVLtPJNpi8Ly46Wft3wGbayGkhaGzKLVcepmrhKTP";
+
+	unsigned int nConnections = 0;
+	unsigned int nLastBlockFound = 0;
+	LLP::Timer LAST_BLOCK_FOUND_TIMER;
 	
 	
 	/** Used to Sort the Database Account Keys by Balance. **/
@@ -124,15 +137,15 @@ namespace Core
 		for( int nIndex = 0; nIndex < vBlocks.size(); nIndex++)
 		{
 			LLD::Block cBlock = BlockDB.GetRecord(vBlocks[nIndex]);
-			if(cBlock.nRound > nCurrentRound)
-				nCurrentRound = cBlock.nRound;
+			if(cBlock.nRound >= nCurrentRound)
+				nCurrentRound = cBlock.nRound +1;
 		}
 		
 		LLP::Thread_t MASTER(MasterThread);
 		LLP::Thread_t ORPHAN(OrphanThread);
         printf("Startin Daemon connections");
 		for(int nIndex = 0; nIndex < nMaxDaemons; nIndex++)
-			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, "127.0.0.1", "9325"));
+			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, Core::WALLET_IP_ADDRESS, "9325"));
 		printf("...done");
 		Sleep(1000);
 		SERVER    = new LLP::Server<LLP::PoolConnection>(nPort, nPoolThreads, fDDOS, cScore, rScore, 20);
@@ -150,6 +163,8 @@ namespace Core
 			cAccount.nRoundShares = 0;
 			AccountDB.UpdateRecord(cAccount);
 		}
+
+		STATSCOLLECTOR.ClearAccountRoundShares();
 	}
 	
 	
@@ -171,10 +186,16 @@ namespace Core
 	{
 		/** Get a Record from the Database. **/
 		LLD::Block cBlock = BlockDB.GetRecord(hashBlock);
+
+		if( cBlock.nCoinbaseValue == 0)
+			return; // already processed
 		
+		unsigned int nRoundToRefund = cBlock.nRound;
+
+		STATSCOLLECTOR.FlagRoundAsOrphan(nRoundToRefund);
 		
 		/** Set the Flag that Block is an Orphan. **/
-		cBlock.nRound = 0;
+		cBlock.nCoinbaseValue = 0;
 		
 		
 		printf("\n---------------------------------------------------\n\n");
@@ -191,6 +212,8 @@ namespace Core
 			
 			printf("[MASTER] Account %s Removed %f Credits\n", nIterator->first.c_str(), nIterator->second / 1000000.0);
 			AccountDB.UpdateRecord(cAccount);
+
+			STATSCOLLECTOR.DeleteAccountEarnings( nIterator->first, nRoundToRefund);
 		}
 		
 		
@@ -202,6 +225,8 @@ namespace Core
 			
 			printf("[MASTER] Account %s Refunded %f NIRO\n", nIterator->first.c_str(), nIterator->second / 1000000.0);
 			AccountDB.UpdateRecord(cAccount);
+
+			STATSCOLLECTOR.DeleteAccountPayment( nIterator->first, nRoundToRefund);
 		}
 		
 		printf("\n---------------------------------------------------\n\n");
@@ -210,6 +235,7 @@ namespace Core
 		/** Update the Record into the Database. **/
 		BlockDB.UpdateRecord(cBlock);
 		BlockDB.WriteToDisk();
+
 	}
 	
 	
@@ -217,7 +243,7 @@ namespace Core
 	void UpdateBalances(uint64 nReward)
 	{
 		printf("\n---------------------------------------------------\n\n");
-		
+		time_t tTime = time(0);
 		
 		/** Create a New Block Record to Track Payouts. **/
 		LLD::Block cBlock(hashBlockSubmission);
@@ -239,6 +265,8 @@ namespace Core
 			
 			cBlock.cCredits.AddCredit(LAST_ROUND_BLOCKFINDER, nCredit);
             
+			STATSCOLLECTOR.AddAccountEarnings( LAST_ROUND_BLOCKFINDER, Core::nCurrentRound, Core::nBestHeight, 0, nCredit, tTime);
+
             printf("[ACCOUNT] Block Finder Bonus to %s of %f NIRO\n", LAST_ROUND_BLOCKFINDER.c_str(), (nCredit) / 1000000.0 );
             
 			nReward -= nCredit;
@@ -264,6 +292,10 @@ namespace Core
 					cAccount.nAccountBalance -= cGlobalCoinbase.mapOutputs[vKeys[nIndex]];
 					
 				AccountDB.UpdateRecord(cAccount);
+
+				//save payment stats
+				STATSCOLLECTOR.AddAccountPayment( vKeys[nIndex], Core::nCurrentRound, Core::nBestHeight, cGlobalCoinbase.mapOutputs[vKeys[nIndex]], tTime);
+			
 			}
 			
 			
@@ -285,7 +317,9 @@ namespace Core
 			
 			/** Commit the New Account Record to Database. **/
 			AccountDB.UpdateRecord(cAccount);
-			
+
+			// save stats
+			STATSCOLLECTOR.AddAccountEarnings( vKeys[nIndex], Core::nCurrentRound, Core::nBestHeight, cAccount.nRoundShares, nCredit, tTime);
 			
 			printf("[ACCOUNT] Account: %s | Credit: %f NIRO | Balance: %f NIRO\n", cAccount.cKey.c_str(), nCredit / 1000000.0, cAccount.nAccountBalance / 1000000.0);
 		}
@@ -296,6 +330,8 @@ namespace Core
 			LLD::Account cAccount = AccountDB.GetRecord(LAST_ROUND_BLOCKFINDER);
 			cAccount.nAccountBalance += (nReward - nTotalReward);
 			AccountDB.UpdateRecord(cAccount);
+
+			STATSCOLLECTOR.AddAccountEarnings( LAST_ROUND_BLOCKFINDER, Core::nCurrentRound, Core::nBestHeight,  0, (nReward - nTotalReward), tTime);
 			
 			printf("[ACCOUNT] Block Finder Additional Credit to %s of %f NIRO\n", LAST_ROUND_BLOCKFINDER.c_str(), (nReward - nTotalReward) / 1000000.0 );
 		}
@@ -307,7 +343,6 @@ namespace Core
 		
 		/** Commit the Account Changes to Database. **/
 		AccountDB.WriteToDisk();
-		
 		
 		printf("[ACCOUNT] Balances Updated. Total Round Weight = %f | Total Round Reward: %f NIRO\n", nTotalWeight / 1000000.0, nReward / 1000000.0);
 		printf("\n---------------------------------------------------\n\n");
@@ -331,6 +366,8 @@ namespace Core
 		LLP::Timer TIMER;
 		TIMER.Start();
 		
+		STATSCOLLECTOR.SaveCurrentRound();
+
 		UpdateBalances(nRoundReward);
 		ClearShares();
 		nCurrentRound++;
@@ -369,10 +406,10 @@ namespace Core
 		LLP::Timer TIMER;
 		TIMER.Start();
 		
-		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection("127.0.0.1", "9325");
+		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, "9325");
 		loop
 		{
-			Sleep(1);
+			Sleep(10);
 			
 			/** Attempt with best efforts to keep the Connection Alive. **/
 			if(!CLIENT->Connected() || CLIENT->Errors() || CLIENT->Timeout(30))
@@ -424,16 +461,20 @@ namespace Core
 			if(TIMER.ElapsedMilliseconds() > 20000)
 			{
 				std::vector<uint1024> vKeys = BlockDB.GetKeys();
+				printf("Checking last 5 blocks...\n");
 				for(int nIndex = 0; nIndex < vKeys.size(); nIndex++)
-					if(BlockDB.GetRecord(vKeys[nIndex]).nRound >= nCurrentRound)
+				{
+					LLD::Block cBlock = BlockDB.GetRecord(vKeys[nIndex]);
+					if(cBlock.nRound >= nCurrentRound -5 && cBlock.nCoinbaseValue > 0)
 						CLIENT->CheckBlock(vKeys[nIndex]);
+				}
 					
 				TIMER.Reset();
 			}	
 		}
 	}
 	
-	/** Thread to Determine what Block and Rewards the Coinshield Network is on. **/
+	/** Thread to Determine what Block and Rewards the Nexus Network is on. **/
 	void MasterThread()
 	{
 		printf("[MASTER] Initialized Master Thread\n");
@@ -442,12 +483,13 @@ namespace Core
 		
 		LLP::Timer METER_TIMER;
 		METER_TIMER.Start();
+
+		LAST_BLOCK_FOUND_TIMER.Start();
 		
-		
-		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection("127.0.0.1", "9325");
+		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, "9325");
 		loop
 		{
-			Sleep(1);
+			Sleep(10);
 			
 			/** Let thread idle while account balances are updated. **/
 			if(fNewRound || fSubmittingBlock)
@@ -479,10 +521,16 @@ namespace Core
 			
 			if(METER_TIMER.ElapsedMilliseconds() > 10000)
 			{
-				
+				// update the number of connections from the server so we have it available for stats ouput
+				nConnections = SERVER->nGlobalConnections;
+
 				printf("[METERS] 4 ch: x %f | 5 ch: x %f | 6 ch: x %f | 7 ch: x %f\n", (double)nDifficultyShares[0] / nDifficultyShares[1],
 				(double)nDifficultyShares[1] / nDifficultyShares[2], (double)nDifficultyShares[2] / nDifficultyShares[3], (double)nDifficultyShares[3] / nDifficultyShares[4]);
-				
+
+				// capture pool and account stats
+				STATSCOLLECTOR.UpdatePoolData();
+				STATSCOLLECTOR.UpdateAccountData();
+
 				METER_TIMER.Reset();
 			}
 			
@@ -525,7 +573,7 @@ namespace Core
 				
 				if(nHeight > nBestHeight)
 				{
-					printf("[MASTER] Coinshield Network: New Block [Height] %u\n", nHeight);
+					printf("[MASTER] Nexus Network: New Block [Height] %u\n", nHeight);
 					fCoinbasePending = true;
 
 				}
@@ -537,7 +585,7 @@ namespace Core
 			/** Response from Mining LLP that there is a new block. **/
 			else if(PACKET.HEADER == CLIENT->NEW_ROUND)
 			{
-				printf("[MASTER] Coinshield Network: New Block [Round] %u\n", nBestHeight);
+				printf("[MASTER] Nexus Network: New Block [Round] %u\n", nBestHeight);
 				fCoinbasePending = true;
 			}
 			

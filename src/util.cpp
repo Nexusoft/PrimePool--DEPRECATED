@@ -21,10 +21,16 @@ int ConsoleOutput(const char* pszFormat, ...)
 	
     if (fileout)
     {
+        // prepend timestamp
+        std::cout << currentDateTime() << "\t";
+
         va_list arg_ptr;
         va_start(arg_ptr, pszFormat);
 		ret = vprintf(pszFormat, arg_ptr);
         va_end(arg_ptr);
+
+        // prepend timestamp
+        fprintf(fileout, "%s\t", currentDateTime().c_str() );
         
         va_start(arg_ptr, pszFormat);
 		ret = vfprintf(fileout, pszFormat, arg_ptr);
@@ -109,3 +115,6 @@ bool IsBannedAccount( std::string account )
     LoadBannedAccounts();
     return std::find(BANNED_ACCOUNTS.begin(), BANNED_ACCOUNTS.end(), account) != BANNED_ACCOUNTS.end() ; 
 }
+
+
+

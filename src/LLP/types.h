@@ -179,7 +179,8 @@ namespace LLP
 		
 	public:
 		DDOS_Score rSCORE, cSCORE;
-		DDOS_Filter(unsigned int nTimespan) : rSCORE(nTimespan), cSCORE(nTimespan), BANTIME(0), TOTALBANS(0) { }
+		std::string IPADDRESS;
+		DDOS_Filter(unsigned int nTimespan, std::string strIPAddress) : rSCORE(nTimespan), cSCORE(nTimespan), IPADDRESS(strIPAddress), BANTIME(0), TOTALBANS(0) { }
 		Mutex_t MUTEX;
 		
 		/** Ban a Connection, and Flush its Scores. **/
@@ -195,7 +196,7 @@ namespace LLP
 			
 			BANTIME = std::max(TOTALBANS * (rSCORE.Score() + 1) * (cSCORE.Score() + 1), TOTALBANS * 1200u);
 			
-			printf("XXXXX DDOS Filter cScore = %i rScore = %i Banned for %u Seconds. Violation: %s\n", cSCORE.Score(), rSCORE.Score(), BANTIME, strMessage.c_str());
+			printf("XXXXX DDOS Filter Address = %s cScore = %i rScore = %i Banned for %u Seconds. Violation: %s\n", IPADDRESS.c_str(), cSCORE.Score(), rSCORE.Score(), BANTIME, strMessage.c_str());
 			
 			cSCORE.Flush();
 			rSCORE.Flush();
@@ -398,6 +399,12 @@ namespace LLP
 			catch(...){}
 			
 			CONNECTED = false;
+		}
+
+		std::string GetIPAddress()
+		{
+			boost::system::error_code ec;
+			return SOCKET->remote_endpoint(ec).address().to_string();
 		}
 		
 		

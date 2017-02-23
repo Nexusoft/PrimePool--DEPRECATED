@@ -3,6 +3,7 @@
 #include "../coinbase.h"
 #include "../core.h"
 #include "../util.h"
+#include "../statscollector.h"
 
 namespace LLP
 {
@@ -80,7 +81,7 @@ namespace LLP
 		CONNECTIONS[nID] = pConnection;
 		nTotalConnections++;
 		
-		printf("[DAEMON] Pool Connection %i Added to Daemon Handle %u\n", nID, ID);
+		printf("[DAEMON] Pool Connection %i Added to Daemon Handle %u.  IP: %s\n", nID, ID, CONNECTIONS[nID]->GetIPAddress().c_str());
 		return nID;
 	}
 	
@@ -100,11 +101,14 @@ namespace LLP
 	void DaemonHandle::RemoveConnection(int nIndex)
 	{
 		LOCK(CONNECTION_MUTEX);
+		
+		if( CONNECTIONS[nIndex]->ADDRESS != "")
+			Core::STATSCOLLECTOR.DecConnectionCount(CONNECTIONS[nIndex]->ADDRESS, CONNECTIONS[nIndex]->GUID);
+
+		printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u.  IP: %s\n", nIndex, ID, CONNECTIONS[nIndex]->GetIPAddress().c_str());
+		
 		CONNECTIONS[nIndex] = NULL;
-		
 		nTotalConnections--;
-		
-		printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u\n", nIndex, ID);
 	}
 		
 
@@ -128,7 +132,7 @@ namespace LLP
 		LLP::Timer TIMER;
 		loop
 		{
-			Sleep(1);
+			Sleep(10);
 		
 			/** Attempt with best efforts to keep the Connection Alive. **/
 			if(!CLIENT->Connected() || CLIENT->Errors() || CLIENT->Timeout(60))
@@ -267,19 +271,23 @@ namespace LLP
 						{
 							Core::fSubmittingBlock = true;
 							Core::hashBlockSubmission = CONNECTIONS[nIndex]->SUBMISSION_BLOCK->GetHash();
-							Core::LAST_ROUND_BLOCKFINDER = CONNECTIONS[nIndex]->ADDRESS;
+							 
 							
 							/** Submit the Block to Network if it is Valid. **/
 							if(CONNECTIONS[nIndex]->SUBMISSION_BLOCK->nHeight == Core::nBestHeight)
 							{
 								CLIENT->SubmitBlock(CONNECTIONS[nIndex]->SUBMISSION_BLOCK->hashMerkleRoot, CONNECTIONS[nIndex]->SUBMISSION_BLOCK->nNonce);
-									
+
+								Core::LAST_BLOCK_FOUND_TIMER.Reset();
+								Core::LAST_ROUND_BLOCKFINDER = CONNECTIONS[nIndex]->ADDRESS;
+								Core::nLastBlockFound = CONNECTIONS[nIndex]->SUBMISSION_BLOCK->nHeight;
+
 								printf("[DAEMON] Submitting Block for Address %s on Handle %u\n", CONNECTIONS[nIndex]->ADDRESS.c_str(), ID);
 							}
 							else
 								printf("[DAEMON] Stale Block Submitted on Handle %u\n", ID);
-								
-								
+
+
 							/** Reset the Submission Block Pointer. **/
 							CONNECTIONS[nIndex]->SUBMISSION_BLOCK = NULL;
 							break;

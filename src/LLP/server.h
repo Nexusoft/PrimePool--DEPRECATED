@@ -76,7 +76,7 @@ namespace LLP
 			for(;;)
 			{
 				/** Keep data threads at 1000 FPS Maximum. **/
-				Sleep(1);
+				Sleep(10);
 				
 				/** Check all connections for data and packets. **/
 				int nSize = CONNECTIONS.size();
@@ -172,6 +172,7 @@ namespace LLP
 		
 	public:
 		int PORT, MAX_THREADS;
+		unsigned int nGlobalConnections = 0;
 		
 		/** The data type to keep track of current running threads. **/
 		std::vector< DataThread<ProtocolType>* > DATA_THREADS;
@@ -221,13 +222,13 @@ namespace LLP
 			{	
 				Sleep(10000);
 				
-				unsigned int nGlobalConnections = 0;
+				nGlobalConnections = 0;
 				for(int nIndex = 0; nIndex < MAX_THREADS; nIndex++)
 					nGlobalConnections += DATA_THREADS[nIndex]->nConnections;
 					
 				double RPS = (double) TotalRequests() / TIMER.Elapsed();
 				printf("[METERS] LLP Running at %f Requests per Second with %u Connections.\n", RPS, nGlobalConnections);
-				
+
 				TIMER.Reset();
 				ClearRequests();
 			}
@@ -276,11 +277,11 @@ namespace LLP
 					
 					{ //LOCK(DDOS_MUTEX);
 						if(!DDOS_MAP.count(ADDRESS))
-							DDOS_MAP[ADDRESS] = new DDOS_Filter(30);
+							DDOS_MAP[ADDRESS] = new DDOS_Filter(30, IPADDRESS);
                             
                         // ban if on the banned IP list
                         if( fDDOS && IsBannedIPAddress( IPADDRESS ))
-							DDOS_MAP[ADDRESS]->Ban();                            
+							DDOS_MAP[ADDRESS]->Ban("Banned IP Address");                            
                             
 						/** DDOS Operations: Only executed when DDOS is enabled. **/
 						if(fDDOS && DDOS_MAP[ADDRESS]->Banned())
