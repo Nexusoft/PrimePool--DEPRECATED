@@ -162,8 +162,6 @@ namespace Core
 		void DecConnectionCount( std::string ADDRESS, std::string GUID );
 		int GetConnectionCount( std::string ADDRESS );
 		void UpdateConnectionData(std::string ADDRESS, std::string GUID, double PPS, double WPS);
-		double GetAccountPPS(std::string ADDRESS);
-		double GetAccountWPS(std::string ADDRESS);
 
 		void UpdatePoolData();
 		void UpdateAccountData(bool bUpdateAll = false);

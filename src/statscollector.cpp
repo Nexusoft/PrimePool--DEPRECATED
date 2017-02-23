@@ -91,15 +91,6 @@ void StatsCollector::UpdateConnectionData(std::string ADDRESS, std::string GUID,
     CONNECTIONS_BY_ADDRESS_MUTEX.unlock();
 }
 
-double StatsCollector::GetAccountPPS(std::string ADDRESS)
-{
-    return CONNECTIONS_BY_ADDRESS[ADDRESS].GetTotalPPS();
-}
-
-double StatsCollector::GetAccountWPS(std::string ADDRESS)
-{
-    return CONNECTIONS_BY_ADDRESS[ADDRESS].GetTotalWPS();
-}
 
 void StatsCollector::UpdatePoolData()
 {
