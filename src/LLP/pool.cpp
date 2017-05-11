@@ -358,7 +358,7 @@ namespace LLP
 				}
 				
 				LLD::Account cAccount = Core::AccountDB.GetRecord(ADDRESS);
-				uint64 nWeight = pow(13.0, nDifficulty - 2.0);
+				uint64 nWeight = pow(25.0, nDifficulty - 3.0);
 				cAccount.nRoundShares += nWeight;
 				Core::AccountDB.UpdateRecord(cAccount);
 				
