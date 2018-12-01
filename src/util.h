@@ -9,7 +9,11 @@
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#ifdef WIN32
+#include <mpir.h>
+#else
 #include <gmp.h>
+#endif
 #include "bignum.h"
 #include <fstream>
 #include <sstream>
@@ -36,7 +40,7 @@ int ConsoleOutput(const char* pszFormat, ...);
 inline void Sleep(unsigned int nTime){ boost::this_thread::sleep(boost::posix_time::milliseconds(nTime)); }
 #endif
 
-inline bignum2mpz(const BIGNUM *bn, mpz_t g)
+inline int bignum2mpz(const BIGNUM *bn, mpz_t g)
 {
 	bn_check_top(bn);
 	if(((sizeof(bn->d[0]) * 8) == GMP_NUMB_BITS) && (BN_BITS2 == GMP_NUMB_BITS)) 
@@ -86,7 +90,7 @@ inline int mpz2bignum(mpz_t g, BIGNUM *bn)
 	else
 	{
 		int toret;
-		char *tmpchar = OPENSSL_malloc(mpz_sizeinbase(g, 16) + 10);
+		char *tmpchar = (char*)OPENSSL_malloc(mpz_sizeinbase(g, 16) + 10);
 		
 		if(!tmpchar) return 0;
 			mpz_get_str(tmpchar, 16, g);

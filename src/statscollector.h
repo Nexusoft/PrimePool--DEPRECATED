@@ -7,7 +7,11 @@
 #include <boost/serialization/list.hpp>
 #include "bignum.h"
 #include "util.h"
+#ifdef WIN32
+#include <mpir.h>
+#else
 #include <gmp.h>
+#endif
 #include "core.h"
 #include "statspersister.h"
 
