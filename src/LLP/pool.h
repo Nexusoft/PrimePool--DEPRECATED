@@ -4,9 +4,9 @@
 #include <stack>
 
 #include "types.h"
+#include "block.h"
 #include "../hash/uint1024.h"
 
-namespace Core { class CBlock; }
 namespace LLP
 {
 	/** Forward Declarations. **/
@@ -16,8 +16,8 @@ namespace LLP
 	/** Template Connection to be used by LLP Server. **/
 	class PoolConnection : public Connection
 	{	
-		std::map<uint1024, Core::CBlock*> MAP_BLOCKS;
-		std::stack<Core::CBlock*> NEW_BLOCKS;
+		std::map<uint1024, CBlock::Sptr> MAP_BLOCKS;
+		std::stack<CBlock::Uptr> NEW_BLOCKS;
 	
 		DaemonHandle* DAEMON;
 		
@@ -64,10 +64,7 @@ namespace LLP
 		PoolConnection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN, bool isDDOS) : Connection( SOCKET_IN, DDOS_IN, isDDOS ), BLOCK_TIMER() {}
 		
 		~PoolConnection()
-		{
-			for(std::map<uint1024, Core::CBlock*>::iterator IT = MAP_BLOCKS.begin(); IT != MAP_BLOCKS.end(); ++ IT)
-				delete IT->second;
-				
+		{				
 			MAP_BLOCKS.clear();
 		}
 		
@@ -84,13 +81,13 @@ namespace LLP
 		std::string GUID;
 
 		/** Block Set by Connection if it is Above Difficulty. **/
-		Core::CBlock* SUBMISSION_BLOCK = NULL;
+		CBlock::Sptr SUBMISSION_BLOCK = nullptr;
 		
 		/** Mutex for Modifying Submission Block Pointer. **/
 		boost::mutex  SUBMISSION_MUTEX;
 		
 		/** Add a Block to the Pool Connection Stacks. **/
-		void AddBlock(Core::CBlock* BLOCK);
+		void AddBlock(CBlock::Uptr BLOCK);
 		
 		/** Event Function to Customize Code For Inheriting Class Happening on the LLP Data Threads. **/
 		void Event(unsigned char EVENT, unsigned int LENGTH = 0);
@@ -112,7 +109,7 @@ namespace LLP
 		inline void Respond(unsigned char HEADER) { this->WritePacket(GetPacket(HEADER)); }
 		
 		/** Convert the Header of a Block into a Byte Stream for Reading and Writing Across Sockets. **/
-		inline std::vector<unsigned char> SerializeBlock(Core::CBlock* BLOCK);
+		inline std::vector<unsigned char> SerializeBlock(CBlock::Sptr BLOCK);
 	};
 }
 

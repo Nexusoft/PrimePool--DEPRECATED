@@ -1,8 +1,8 @@
 #ifndef COINSHEILD_DAEMON_H
 #define COINSHIELD_DAEMON_H
 
-
 #include "types.h"
+#include "block.h"
 #include "../hash/uint1024.h"
 
 class Coinbase;
@@ -157,7 +157,7 @@ namespace LLP
 			return false;
 		}
 		
-		Core::CBlock* DeserializeBlock(std::vector<unsigned char> DATA);
+		CBlock::Uptr DeserializeBlock(std::vector<unsigned char> const& DATA);
 	};
 	
 	

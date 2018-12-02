@@ -50,9 +50,9 @@ namespace LLP
 	}
 	
 
-	Core::CBlock* DaemonConnection::DeserializeBlock(std::vector<unsigned char> DATA)
+	CBlock::Uptr DaemonConnection::DeserializeBlock(std::vector<unsigned char> const& DATA)
 	{
-		Core::CBlock* BLOCK = new Core::CBlock();
+		CBlock::Uptr BLOCK   = std::make_unique<CBlock>();
 		BLOCK->nVersion      = bytes2uint(std::vector<unsigned char>(DATA.begin(), DATA.begin() + 4));
 			
 		BLOCK->hashPrevBlock.SetBytes (std::vector<unsigned char>(DATA.begin() + 4, DATA.begin() + 132));
@@ -208,32 +208,38 @@ namespace LLP
 				/** Add a Block to the Stack if it is received by the Daemon Connection. **/
 				else if(PACKET.HEADER == CLIENT->BLOCK_DATA)
 				{
-					Core::CBlock* BLOCK = CLIENT->DeserializeBlock(PACKET.DATA);
-					if(BLOCK->nHeight == Core::nBestHeight)
+					CBlock::Uptr BLOCK = CLIENT->DeserializeBlock(PACKET.DATA);
+					/** If the Block isn't less than 1024-bits request a new one **/
+					if(BLOCK->GetHash().high_bits(0x80000000))
 					{
-						{ LOCK(CONNECTION_MUTEX);
-							for(int nIndex = 0; nIndex < CONNECTIONS.size(); nIndex++)
-							{
-								if(!CONNECTIONS[nIndex])
-									continue;
-									
-								if(CONNECTIONS[nIndex]->nBlocksWaiting > 0)
-								{
-									CONNECTIONS[nIndex]->AddBlock(BLOCK);
-									
-									//printf("[DAEMON] Block Received Height = %u on Handle %u Assigned to %u\n", nBestHeight, ID, nIndex);
-									break;
-								}
-							}
-						}
-						
+						printf("[DAEMON] Block isn't less than 1024-bits. Request new one on Handle %u\n", ID);
+						CLIENT->GetBlock();
 					}
 					else
-						printf("[DAEMON] Block Obsolete Height = %u, Skipping over on Handle %u\n", BLOCK->nHeight, ID);
-				}
-			
-			}
-			
+					{
+						if(BLOCK->nHeight == Core::nBestHeight)
+						{
+							{ LOCK(CONNECTION_MUTEX);
+								for(int nIndex = 0; nIndex < CONNECTIONS.size(); nIndex++)
+								{
+									if(!CONNECTIONS[nIndex])
+										continue;
+										
+									if(CONNECTIONS[nIndex]->nBlocksWaiting > 0)
+									{
+										CONNECTIONS[nIndex]->AddBlock(std::move(BLOCK));
+										
+										printf("[DAEMON] Block Received Height = %u on Handle %u Assigned to %u\n", Core::nBestHeight, ID, nIndex);
+										break;
+									}
+								}
+							}						
+						}
+						else
+							printf("[DAEMON] Block Obsolete Height = %u, Skipping over on Handle %u\n", BLOCK->nHeight, ID);
+					}
+				}			
+			}			
 			
 			/** Don't Request Anything if Waiting for New Round to Reset. **/
 			if(Core::fCoinbasePending || Core::fSubmittingBlock || Core::fNewRound || fCoinbasePending)
@@ -289,7 +295,7 @@ namespace LLP
 
 
 							/** Reset the Submission Block Pointer. **/
-							CONNECTIONS[nIndex]->SUBMISSION_BLOCK = NULL;
+							CONNECTIONS[nIndex]->SUBMISSION_BLOCK = nullptr;
 							break;
 						}
 					}
@@ -302,9 +308,8 @@ namespace LLP
 							CONNECTIONS[nIndex]->nBlocksWaiting++;
 							
 							CLIENT->GetBlock();
-							//CLIENT->GetBlock();
 							
-							//printf("[DAEMON] Requesting Block from Daemon Handle %u\n", ID);
+							printf("[DAEMON] Requesting Block from Daemon Handle %u\n", ID);
 						}
 					}
 				}

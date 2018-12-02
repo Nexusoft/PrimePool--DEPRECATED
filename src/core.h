@@ -10,6 +10,7 @@
 #endif
 #include "config.h"
 
+#include <memory>
 
 class Coinbase;
 
@@ -28,38 +29,6 @@ namespace Core
 
 	/** Global Best Height Tracker. Keeps track of Current Block. **/
 	extern unsigned int nBestHeight;
-	
-	/** Mock Class for Building Block Hash. **/
-	class CBlock
-	{
-	public:
-
-		/** Begin of Header.   BEGIN(nVersion) **/
-		unsigned int  nVersion;
-		uint1024 hashPrevBlock;
-		uint512 hashMerkleRoot;
-		unsigned int  nChannel;
-		unsigned int   nHeight;
-		unsigned int     nBits;
-		uint64          nNonce;
-		/** End of Header.     END(nNonce). 
-			All the components to build an SK1024 Block Hash. **/
-		
-		
-		CBlock()
-		{
-			nVersion        = 0;
-			hashPrevBlock   = 0;
-			hashMerkleRoot  = 0;
-			nChannel        = 0;
-			nHeight         = 0;
-			nBits           = 0;
-			nNonce          = 0;
-		}
-		
-		inline uint1024 GetHash() const { return SK1024(BEGIN(nVersion), END(nBits)); }
-		inline CBigNum GetPrime() const { return CBigNum(GetHash() + nNonce); }
-	};
 
 	/** Pool Configuration **/
 	extern Config CONFIG; 

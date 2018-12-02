@@ -21,22 +21,17 @@ namespace LLP
 		
 		while(!NEW_BLOCKS.empty())
 		{
-			Core::CBlock* BLOCK = NEW_BLOCKS.top();
+			NEW_BLOCKS.top();
 			NEW_BLOCKS.pop();
-			
-			delete BLOCK;
 		}
-		
-		for(std::map<uint1024, Core::CBlock*>::iterator IT = MAP_BLOCKS.begin(); IT != MAP_BLOCKS.end(); ++ IT)
-			delete IT->second;
 						
 		MAP_BLOCKS.clear();
 	}
 
-	void PoolConnection::AddBlock(Core::CBlock* BLOCK)
+	void PoolConnection::AddBlock(CBlock::Uptr BLOCK)
 	{
 		LOCK(BLOCK_MUTEX);
-		NEW_BLOCKS.push(BLOCK);
+		NEW_BLOCKS.push(std::move(BLOCK));
 		
 		nBlocksWaiting--;
 	}
@@ -119,15 +114,15 @@ namespace LLP
 			{ LOCK(BLOCK_MUTEX);
 				while(!NEW_BLOCKS.empty())
 				{
-					Core::CBlock* BLOCK = NEW_BLOCKS.top();
+					CBlock::Sptr BLOCK{std::move(NEW_BLOCKS.top())};
 					NEW_BLOCKS.pop();
 					
 					/** Add to the block map. **/
 					MAP_BLOCKS[BLOCK->GetHash()] = BLOCK;
-					
+
 					/** Construct a response packet by serializing the Block. **/
 					Packet RESPONSE = GetPacket(BLOCK_DATA);
-					RESPONSE.DATA   = SerializeBlock(BLOCK);
+					RESPONSE.DATA   = SerializeBlock(std::move(BLOCK));
 					RESPONSE.LENGTH = RESPONSE.DATA.size();
 					
 					this->WritePacket(RESPONSE);
@@ -283,7 +278,7 @@ namespace LLP
 		{
 			uint1024 hashPrimeOrigin;
 			hashPrimeOrigin.SetBytes(std::vector<unsigned char>(PACKET.DATA.begin(), PACKET.DATA.end() - 8));
-				
+
 				
 			/** Don't Accept a Share with no Correlated Block. **/
 			if(!MAP_BLOCKS.count(hashPrimeOrigin))
@@ -450,7 +445,7 @@ namespace LLP
 	}
 	
 	/** Convert the Header of a Block into a Byte Stream for Reading and Writing Across Sockets. **/
-	std::vector<unsigned char> PoolConnection::SerializeBlock(Core::CBlock* BLOCK)
+	std::vector<unsigned char> PoolConnection::SerializeBlock(CBlock::Sptr BLOCK)
 	{
 		std::vector<unsigned char> HASH        = BLOCK->GetHash().GetBytes();
 		std::vector<unsigned char> MINIMUM     = uint2bytes(Core::nMinimumShare);

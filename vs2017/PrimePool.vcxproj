@@ -47,6 +47,7 @@
     <ClInclude Include="..\src\json\json_spirit_writer_template.h" />
     <ClInclude Include="..\src\LLD\database.h" />
     <ClInclude Include="..\src\LLD\record.h" />
+    <ClInclude Include="..\src\LLP\block.h" />
     <ClInclude Include="..\src\LLP\daemon.h" />
     <ClInclude Include="..\src\LLP\pool.h" />
     <ClInclude Include="..\src\LLP\server.h" />

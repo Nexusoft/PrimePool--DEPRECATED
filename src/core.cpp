@@ -23,7 +23,7 @@ namespace Core
 
 	/** Coinbase Transaction for this Block. **/
 	Coinbase cGlobalCoinbase;
-	std::string POOL_VERSION = "1.0.1";
+	std::string POOL_VERSION = "1.0.2";
 	
 
 	/** Wallet Connection Variables. **/
