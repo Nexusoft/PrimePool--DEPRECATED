@@ -4,7 +4,7 @@
     
     "daemon_threads" : 10,
     "pool_threads" : 20,
-    "enable_ddos" : "true",
+    "enable_ddos" : true,
     "ddos_rscore" : 20,
     "ddos_cscore" : 2,
     "min_share" : 40000000,

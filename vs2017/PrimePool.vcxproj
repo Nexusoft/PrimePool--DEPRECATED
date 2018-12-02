@@ -36,15 +36,7 @@
     <ClInclude Include="..\src\hash\skein_port.h" />
     <ClInclude Include="..\src\hash\templates.h" />
     <ClInclude Include="..\src\hash\uint1024.h" />
-    <ClInclude Include="..\src\json\json_spirit.h" />
-    <ClInclude Include="..\src\json\json_spirit_error_position.h" />
-    <ClInclude Include="..\src\json\json_spirit_reader.h" />
-    <ClInclude Include="..\src\json\json_spirit_reader_template.h" />
-    <ClInclude Include="..\src\json\json_spirit_stream_reader.h" />
-    <ClInclude Include="..\src\json\json_spirit_utils.h" />
-    <ClInclude Include="..\src\json\json_spirit_value.h" />
-    <ClInclude Include="..\src\json\json_spirit_writer.h" />
-    <ClInclude Include="..\src\json\json_spirit_writer_template.h" />
+    <ClInclude Include="..\src\json\json.hpp" />
     <ClInclude Include="..\src\LLD\database.h" />
     <ClInclude Include="..\src\LLD\record.h" />
     <ClInclude Include="..\src\LLP\block.h" />
@@ -67,9 +59,6 @@
     <ClCompile Include="..\src\hash\KeccakSponge.cpp" />
     <ClCompile Include="..\src\hash\skein.cpp" />
     <ClCompile Include="..\src\hash\skein_block.cpp" />
-    <ClCompile Include="..\src\json\json_spirit_reader.cpp" />
-    <ClCompile Include="..\src\json\json_spirit_value.cpp" />
-    <ClCompile Include="..\src\json\json_spirit_writer.cpp" />
     <ClCompile Include="..\src\LLP\daemon.cpp" />
     <ClCompile Include="..\src\LLP\pool.cpp" />
     <ClCompile Include="..\src\LLP\webui.cpp" />
