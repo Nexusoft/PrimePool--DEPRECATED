@@ -20,6 +20,14 @@ MySQL
  - installed on either a local or remote server
  - configured with a user that has permissions to create insert update
 
+# Building windows #
+There is a VS2017 project available. Needed includes and libs will be searched in .\deps\include and .\deps\libs.
+Dependencies
+ - Boost
+ - OpenSSL (version < 1.1.0)
+ - Mpir
+ - MySQL Connector C (available in MYSQL package)
+ 
 # pool.conf file: #
 Please create a pool.conf (example file included) with the following
 

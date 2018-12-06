@@ -3,7 +3,11 @@
 
 #include "bignum.h"
 #include "util.h"
+#ifdef WIN32
+#include <mpir.h>
+#else
 #include <gmp.h>
+#endif
 #include "config.h"
 
 

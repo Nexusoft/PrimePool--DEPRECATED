@@ -292,7 +292,7 @@ namespace LLP
 		virtual void Event(unsigned char EVENT, unsigned int LENGTH = 0){ }
 		
 		/** Virtual Process Function. To be overridden with your own custom packet processing. **/
-		virtual bool ProcessPacket(){ }
+		virtual bool ProcessPacket() { return true; }
 	public:
 	
 	

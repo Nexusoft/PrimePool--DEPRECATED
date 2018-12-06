@@ -23,7 +23,8 @@ namespace Core
 	/** Sieve of Eratosthenes for Divisor Tests. Used for Searching Primes. **/
 	std::vector<unsigned int> Eratosthenes(unsigned int nSieveSize)
 	{
-		bool TABLE[nSieveSize];
+		std::vector<bool>TABLE;
+		TABLE.resize(nSieveSize);
 		
 		for(unsigned int nIndex = 0; nIndex < nSieveSize; nIndex++)
 			TABLE[nIndex] = false;

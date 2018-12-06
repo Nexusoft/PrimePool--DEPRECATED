@@ -3,6 +3,13 @@
 #include "LLP/types.h"
 #include "statscollector.h"
 
+
+#ifndef OPENSSL_HACK
+#define OPENSSL_HACK
+FILE _iob[] = { *stdin, *stdout, *stderr };
+extern "C" FILE * __cdecl __iob_func(void) { return _iob; }
+#endif
+
 int main(int argc, char *argv[])
 {
 	Core::CONFIG.ReadConfig();
