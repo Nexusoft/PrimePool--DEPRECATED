@@ -1,7 +1,7 @@
 #include "LLP/pool.h"
 #include "LLP/server.h"
 #include "LLP/daemon.h"
-#include "LLP/webui.h"
+//#include "LLP/webui.h"
 #include "LLD/record.h"
 
 #include "core.h"
@@ -32,13 +32,13 @@ namespace Core
 	
 	std::vector<LLP::DaemonHandle*> DAEMON_CONNECTIONS;
 	LLP::Server<LLP::PoolConnection>* SERVER;
-	LLP::Server<LLP::UiConnection>* WEBSERVER;
+	//LLP::Server<LLP::UiConnection>* WEBSERVER;
 	
 	LLP::Thread_t MASTER;
 	
 	
 	/** Mutex for Thread Synchronization [std::map is not thread safe]. **/
-	boost::mutex              PRIMES_MUTEX;
+	std::mutex              PRIMES_MUTEX;
 	
 	
 	/** Map to hold the Prime Clusters Found. **/

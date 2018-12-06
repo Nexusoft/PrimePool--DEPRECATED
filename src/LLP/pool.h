@@ -1,10 +1,13 @@
-#ifndef COINSHIELD_POOLSERVER_H
-#define COINSHIELD_POOLSERVER_H
+#ifndef NEXUS_POOLSERVER_H
+#define NEXUS_POOLSERVER_H
 
 #include <stack>
+#include <mutex>
+#include <map>
 
 #include "types.h"
 #include "block.h"
+#include "connection.h"
 #include "../hash/uint1024.h"
 
 namespace LLP
@@ -23,6 +26,8 @@ namespace LLP
 		
 		Timer BLOCK_TIMER;
 		bool fLoggedIn = false;
+		/** Flag to Determine if DDOS is Enabled. **/
+		bool m_bDDOS = false;
 		
 		enum
 		{
@@ -58,10 +63,11 @@ namespace LLP
 		void Clear();
 	
 	public:
-		boost::mutex             BLOCK_MUTEX;
+
+		std::mutex             BLOCK_MUTEX;
 		
 		PoolConnection() : Connection(), BLOCK_TIMER() {}
-		PoolConnection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN, bool isDDOS) : Connection( SOCKET_IN, DDOS_IN, isDDOS ), BLOCK_TIMER() {}
+	//	PoolConnection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN, bool isDDOS) : Connection( SOCKET_IN, DDOS_IN, isDDOS ), BLOCK_TIMER() {}
 		
 		~PoolConnection()
 		{				
@@ -84,7 +90,7 @@ namespace LLP
 		CBlock::Sptr SUBMISSION_BLOCK = nullptr;
 		
 		/** Mutex for Modifying Submission Block Pointer. **/
-		boost::mutex  SUBMISSION_MUTEX;
+		std::mutex  SUBMISSION_MUTEX;
 		
 		/** Add a Block to the Pool Connection Stacks. **/
 		void AddBlock(CBlock::Uptr BLOCK);

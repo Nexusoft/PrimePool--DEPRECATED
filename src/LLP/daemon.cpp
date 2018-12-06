@@ -5,6 +5,8 @@
 #include "../util.h"
 #include "../statscollector.h"
 
+#include <iostream>
+
 namespace LLP
 {
 
@@ -81,10 +83,9 @@ namespace LLP
 		CONNECTIONS[nID] = pConnection;
 		nTotalConnections++;
 		
-		printf("[DAEMON] Pool Connection %i Added to Daemon Handle %u.  IP: %s\n", nID, ID, CONNECTIONS[nID]->GetIPAddress().c_str());
+		std::cout << "[DAEMON] Pool Connection " << nID << " Added to Daemon Handle " << ID << " IP: " <<  CONNECTIONS[nID]->GetRemoteIPAddress() << std::endl;
 		return nID;
-	}
-	
+	}	
 	
 	void DaemonHandle::NewBlock()
 	{
@@ -95,8 +96,7 @@ namespace LLP
 				CONNECTIONS[nIndex]->fNewBlock = true;
 				
 		CLIENT->ClearMaps();
-	}
-	
+	}	
 	
 	void DaemonHandle::RemoveConnection(int nIndex)
 	{
@@ -105,12 +105,12 @@ namespace LLP
 		if( CONNECTIONS[nIndex]->ADDRESS != "")
 			Core::STATSCOLLECTOR.DecConnectionCount(CONNECTIONS[nIndex]->ADDRESS, CONNECTIONS[nIndex]->GUID);
 
-		printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u.  IP: %s\n", nIndex, ID, CONNECTIONS[nIndex]->GetIPAddress().c_str());
+		std::cout << "[DAEMON] Pool Connection " << nIndex << " Removed from Daemon Handle " << ID << std::endl;
+	//	printf("[DAEMON] Pool Connection %i Removed from Daemon Handle %u.  IP: %s\n", nIndex, ID, CONNECTIONS[nIndex]->GetIPAddress().c_str());
 		
 		CONNECTIONS[nIndex] = NULL;
 		nTotalConnections--;
-	}
-		
+	}		
 
 	int DaemonHandle::FindConnection()
 	{

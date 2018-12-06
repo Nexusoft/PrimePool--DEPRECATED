@@ -11,6 +11,8 @@
 #include "config.h"
 
 #include <memory>
+#include <mutex>
+#include <map>
 
 class Coinbase;
 
@@ -90,7 +92,7 @@ namespace Core
 	
 	/** --------- CORE.CPP ----------- **/
 	extern std::map<uint1024, double> PRIMES_MAP;
-	extern boost::mutex              PRIMES_MUTEX;
+	extern std::mutex              PRIMES_MUTEX;
 	
 	extern LLP::Timer nMeterTimer;
 	extern unsigned int nShares;

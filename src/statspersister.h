@@ -3,6 +3,7 @@
 
 #include <string>
 #include "LLP/types.h"
+#include "LLP/timer.h"
 #include "config.h"
 #include "core.h"
 
