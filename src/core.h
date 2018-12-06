@@ -2,6 +2,7 @@
 #define COINSHIELD_LLP_CORE_H
 
 #include "bignum.h"
+#include "hash/uint1024.h"
 #include "util.h"
 #ifdef WIN32
 #include <mpir.h>
@@ -103,20 +104,12 @@ namespace Core
 	/** --------- PRIME.CPP ----------- **/
 	void InitializePrimes();
 	
+	uint1024 FermatTest(uint1024 n);
 	unsigned int SetBits(double nDiff);
-	unsigned int GetPrimeBits(CBigNum prime, int checks);
-	unsigned int GetFractionalDifficulty(CBigNum composite);
+	unsigned int GetFractionalDifficulty(uint1024 composite);
 	
 	double GetDifficulty(unsigned int nBits);
-	double VerifyPrimeDifficulty(CBigNum prime, int checks);
-	double CheckPrimeDifficulty(CBigNum prime);
-	double GmpVerification(CBigNum prime);
-	
-	CBigNum FermatTest(CBigNum n, CBigNum a);
-	bool Miller_Rabin(CBigNum n, int checks);
-	bool PrimeCheck(CBigNum test, int checks);
-	
-	
+	double GmpVerification(uint1024 prime);
 	
 	
 	/** --------- CORE.CPP ----------- **/

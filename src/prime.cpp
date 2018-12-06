@@ -67,87 +67,6 @@ namespace Core
 	/** Convert unsigned int nBits to Decimal. **/
 	double GetDifficulty(unsigned int nBits) { return nBits / 10000000.0; }
 	
-	
-	/** Quick Check of Prime.
-		Difficulty is represented as so V.X
-		V is the whole number, or Cluster Size, X is a proportion
-		of Fermat Remainder from last Composite Number [0 - 1] **/
-	double VerifyPrimeDifficulty(CBigNum prime, int checks)
-	{
-		if(!PrimeCheck(prime, checks))
-			return 0.0;
-			
-		CBigNum lastPrime = prime;
-		CBigNum next = prime + 2;
-		unsigned int clusterSize = 1;
-		
-		/** Largest prime gap in cluster can be +12
-			This was determined by previously found clusters up to 17 primes **/
-		for( next ; next <= lastPrime + 12; next += 2)
-		{
-			if(PrimeCheck(next, checks))
-			{
-				lastPrime = next;
-				++clusterSize;
-			}
-		}
-		
-		/** Calulate the rarety of cluster from proportion of fermat remainder of last prime + 2
-			Keep fractional remainder in bounds of [0, 1] **/
-		double fractionalRemainder = 1000000.0 / GetFractionalDifficulty(next);
-		if(fractionalRemainder > 1.0 || fractionalRemainder < 0.0)
-			fractionalRemainder = 0.0;
-		
-		return (clusterSize + fractionalRemainder);
-	}
-	
-	
-	/** Basic Search filter to determine if further tests should be done. **/
-	bool DivisorCheck(CBigNum bnTest)
-	{
-		for(int index = 0; index < PRIME_SIEVE.size(); index++)
-			if(bnTest % PRIME_SIEVE[index] == 0)
-			   return false;
-			
-				
-		return true;
-	}
-
-
-	/** Quick Check to Determine Prime Cluster Difficulty. **/
-	double CheckPrimeDifficulty(CBigNum prime)
-	{
-		if(FermatTest(prime, 2) != 1)
-			return 0.0;
-			
-		CBigNum lastPrime = prime;
-		CBigNum next = prime + 2;
-		unsigned int clusterSize = 1;
-		
-		/** Largest prime gap in cluster can be +12
-			This was determined by previously found clusters up to 17 primes **/
-		for( next ; next <= lastPrime + 12; next += 2)
-		{
-			if(!DivisorCheck(next))
-				continue;
-				
-			if(FermatTest(next, 2) == 1)
-			{
-				lastPrime = next;
-				++clusterSize;
-			}
-		}
-		
-		/** Calulate the rarety of cluster from proportion of fermat remainder of last prime + 2
-			Keep fractional remainder in bounds of [0, 1] **/
-		double fractionalRemainder = 1000000.0 / GetFractionalDifficulty(next);
-		if(fractionalRemainder > 1.0 || fractionalRemainder < 0.0)
-			fractionalRemainder = 0.0;
-		
-		return (clusterSize + fractionalRemainder);
-	}
-	
-	
 	bool GmpDivisor(mpz_t zPrime, mpz_t zRemainder)
 	{
 		for(int nIndex = 0; nIndex < PRIME_SIEVE.size(); nIndex++)
@@ -182,15 +101,16 @@ namespace Core
 		return true;
 	}
 	
-	double GmpVerification(CBigNum prime)
+	double GmpVerification(uint1024 prime)
 	{
 		mpz_t zN, zRemainder, zPrime;
 		
 		mpz_init(zN);
 		mpz_init(zRemainder);
 		mpz_init(zPrime);
+
+		mpz_import(zPrime, 32, -1, sizeof(uint32_t), 0, 0, prime.data());
 		
-		bignum2mpz(&prime, zPrime);
 		if(!GmpPrimeTest(zPrime, zN, zRemainder))
 		{
 			mpz_clear(zPrime);
@@ -230,56 +150,60 @@ namespace Core
 		return nClusterSize + dFractionalRemainder;
 	}
 
+	/** Simple Modular Exponential Equation a^(n - 1) % n == 1 or notated in
+	Modular Arithmetic a^(n - 1) = 1 [mod n]. **/
+	uint1024 FermatTest(uint1024 n)
+	{
+		uint1024 r;
+		mpz_t zR, zE, zN, zA;
+		mpz_init(zR);
+		mpz_init(zE);
+		mpz_init(zN);
+		mpz_init_set_ui(zA, 2);
+
+		mpz_import(zN, 32, -1, sizeof(uint32_t), 0, 0, n.data());
+
+		mpz_sub_ui(zE, zN, 1);
+		mpz_powm(zR, zA, zE, zN);
+
+		mpz_export(r.data(), 0, -1, sizeof(uint32_t), 0, 0, zR);
+
+		mpz_clear(zR);
+		mpz_clear(zE);
+		mpz_clear(zN);
+		mpz_clear(zA);
+
+		return r;
+	}
 
 	/** Breaks the remainder of last composite in Prime Cluster into an integer. 
 		Larger numbers are more rare to find, so a proportion can be determined 
 		to give decimal difficulty between whole number increases. **/
-	unsigned int GetFractionalDifficulty(CBigNum composite)
+	unsigned int GetFractionalDifficulty(uint1024 composite)
 	{
 		/** Break the remainder of Fermat test to calculate fractional difficulty [Thanks Sunny] **/
-		return ((composite - FermatTest(composite, 2) << 24) / composite).getuint();
-	}
+		mpz_t zA, zB, zC, zN;
+		mpz_init(zA);
+		mpz_init(zB);
+		mpz_init(zC);
+		mpz_init(zN);
 
-	
-	/** Determines if given number is Prime. Accuracy can be determined by "checks". 
-		The default checks the Niro Network uses is 2 **/
-	bool PrimeCheck(CBigNum test, int checks)
-	{
-		/** Check A: Divisor Test **/
-		/** Check A: Small Prime Divisor Tests */
-		CBigNum primes[4] = { 2, 3, 5, 7 };
-		for(int index = 0; index < min(checks, 4); index++)
-			if(test % primes[index] == 0)
-				return false;
-		
-		/** Check B: Miller-Rabin Tests */
-		if(!Miller_Rabin(test, checks))
-			return false;
-			
-		/** Check C: Fermat Tests */
-		for(CBigNum n = 2; n < 2 + checks; n++)
-			if(FermatTest(test, n) != 1)
-				return false;
-		
-		return true;
-	}
+		mpz_import(zB, 32, -1, sizeof(uint32_t), 0, 0, FermatTest(composite).data());
+		mpz_import(zC, 32, -1, sizeof(uint32_t), 0, 0, composite.data());
+		mpz_sub(zA, zC, zB);
+		mpz_mul_2exp(zA, zA, 24);
 
-	
-	/** Simple Modular Exponential Equation a^(n - 1) % n == 1 or notated in Modular Arithmetic a^(n - 1) = 1 [mod n]. 
-		a = Base or 2... 2 + checks, n is the Prime Test. Used after Miller-Rabin and Divisor tests to verify primality. **/
-	CBigNum FermatTest(CBigNum n, CBigNum a)
-	{
-		CAutoBN_CTX pctx;
-		CBigNum e = n - 1;
-		CBigNum r;
-		BN_mod_exp(&r, &a, &e, &n, pctx);
-		
-		return r;
-	}
+		mpz_tdiv_q(zN, zA, zC);
 
-	
-	/** Miller-Rabin Primality Test from the OpenSSL BN Library. **/
-	bool Miller_Rabin(CBigNum n, int checks) { return (BN_is_prime(&n, checks, NULL, NULL, NULL) == 1); }
+		uint32_t diff = mpz_get_ui(zN);
+
+		mpz_clear(zA);
+		mpz_clear(zB);
+		mpz_clear(zC);
+		mpz_clear(zN);
+
+		return diff;
+	}
 
 }
 
