@@ -229,7 +229,10 @@ namespace LLP
 						
 					}
 					else
-						printf("[DAEMON] Block Obsolete Height = %u, Skipping over on Handle %u\n", BLOCK->nHeight, ID);
+					{
+						printf("[DAEMON] Block Obsolete Height = %u but wanted %u, Skipping over on Handle %u\n", BLOCK->nHeight, Core::nBestHeight, ID);
+						CLIENT->GetBlock(); //request another block as the last one was obsolete
+					}
 				}
 			
 			}
