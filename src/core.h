@@ -1,8 +1,8 @@
 #ifndef COINSHIELD_LLP_CORE_H
 #define COINSHIELD_LLP_CORE_H
 
-#include "bignum.h"
 #include "hash/uint1024.h"
+#include "hash/templates.h"
 #include "util.h"
 #ifdef WIN32
 #include <mpir.h>
@@ -59,7 +59,7 @@ namespace Core
 		}
 		
 		inline uint1024 GetHash() const { return SK1024(BEGIN(nVersion), END(nBits)); }
-		inline CBigNum GetPrime() const { return CBigNum(GetHash() + nNonce); }
+		inline uint1024 GetPrime() const { return GetHash() + nNonce; }
 	};
 
 	/** Pool Configuration **/

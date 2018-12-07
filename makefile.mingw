@@ -8,12 +8,10 @@ INCLUDEPATHS= \
  -I"$(CURDIR)\src\hash" \
  -I"$(CURDIR)\src\LLP" \
  -I"C:\Deps\boost_1_57_0" \
- -I"C:\Deps\openssl-1.0.1l\include" \
  -I"C:\Deps\GMP\include"
 
 LIBPATHS= \
  -L"C:\Deps\boost_1_57_0\stage\lib" \
- -L"C:\Deps\openssl-1.0.1l" \
  -L"C:\Deps\GMP\lib" 
 
 LIBS= \
@@ -21,8 +19,6 @@ LIBS= \
  -l boost_filesystem-mgw49-mt-s-1_57 \
  -l boost_program_options-mgw49-mt-s-1_57 \
  -l boost_thread-mgw49-mt-s-1_57 \
- -l ssl \
- -l crypto \
  -l gmp \
  -l mysqlclient
 
