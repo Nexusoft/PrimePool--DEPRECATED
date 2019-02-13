@@ -1,5 +1,7 @@
 {
+    "testnet" : "false",
     "wallet_ip" : "127.0.0.1",
+    "wallet_port" : "9325",
     "port" : 9549,
     
     "daemon_threads" : 10,

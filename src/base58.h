@@ -260,11 +260,13 @@ namespace Core
 		{
 			PUBKEY_ADDRESS = 42,
 			SCRIPT_ADDRESS = 104,
+			PUBKEY_ADDRESS_TEST = 111,
+            SCRIPT_ADDRESS_TEST = 196,
 		};
 
 		bool SetHash256(const uint256& hash256)
 		{
-			SetData(PUBKEY_ADDRESS, &hash256, 32);
+			SetData(Core::CONFIG.fTestNet ? PUBKEY_ADDRESS_TEST : PUBKEY_ADDRESS, &hash256, 32);
 			return true;
 		}
 
@@ -275,26 +277,38 @@ namespace Core
 
 		bool SetScriptHash256(const uint256& hash256)
 		{
-			SetData(SCRIPT_ADDRESS, &hash256, 32);
+			SetData(Core::CONFIG.fTestNet ? SCRIPT_ADDRESS_TEST : SCRIPT_ADDRESS, &hash256, 32);
 			return true;
 		}
 
 		bool IsValid() const
 		{
 			unsigned int nExpectedSize = 32;
-			switch(nVersion)
-			{
-				case PUBKEY_ADDRESS:
-					nExpectedSize = 32; // Hash of public key
-					break;
-				case SCRIPT_ADDRESS:
-					nExpectedSize = 32; // Hash of CScript
-					break;
+            bool fExpectTestNet = false;
+            switch(nVersion)
+            {
+                case PUBKEY_ADDRESS:
+                    nExpectedSize = 32; // Hash of public key
+                    fExpectTestNet = false;
+                    break;
+                case SCRIPT_ADDRESS:
+                    nExpectedSize = 32; // Hash of CScript
+                    fExpectTestNet = false;
+                    break;
 
-				default:
-					return false;
-			}
-			return vchData.size() == nExpectedSize;
+                case PUBKEY_ADDRESS_TEST:
+                    nExpectedSize = 32;
+                    fExpectTestNet = true;
+                    break;
+                case SCRIPT_ADDRESS_TEST:
+                    nExpectedSize = 32;
+                    fExpectTestNet = true;
+                    break;
+
+                default:
+                    return false;
+            }
+            return fExpectTestNet == Core::CONFIG.fTestNet && vchData.size() == nExpectedSize;
 		}
 		bool IsScript() const
 		{
@@ -339,3 +353,4 @@ namespace Core
 }
 
 #endif
+

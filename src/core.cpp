@@ -538,13 +538,16 @@ namespace Core
 			
 			if(TIMER.ElapsedMilliseconds() > 2000)
 			{
-				CLIENT->GetHeight();
-				CLIENT->GetRound();
 					
 				if(fCoinbasePending)
 				{
 					//printf("[MASTER] Getting Reward.\n");
 					CLIENT->GetReward();
+				}
+				else
+				{
+					CLIENT->GetHeight();
+                                	CLIENT->GetRound();
 				}
 						
 				//printf("[MASTER] Checking Round.\n");

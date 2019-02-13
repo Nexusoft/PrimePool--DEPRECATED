@@ -14,6 +14,7 @@ namespace Core
         strWalletIP = "127.0.0.1";
         nWalletPort = 9325;
         nPort = 9549;
+        fTestNet = false;
 
         nDaemonThreads = 10;
         nPoolThreads = 20;
@@ -36,6 +37,7 @@ namespace Core
 	{
 		printf("Configuration: \n");
 		printf("-------------\n");
+        printf("TestNet: %i \n", fTestNet);
 		printf("Wallet IP: %s \n", strWalletIP.c_str());
         printf("Wallet Port: %i \n", nWalletPort);
 		printf("Port: %i \n", nPort);
@@ -71,6 +73,7 @@ namespace Core
         pt::ptree root;
         pt::read_json("pool.conf", root);
 
+        fTestNet = root.get<bool>("testnet");
         strWalletIP = root.get<std::string>("wallet_ip");
         nWalletPort = root.get<int>("wallet_port");
         nPort = root.get<int>("port");
