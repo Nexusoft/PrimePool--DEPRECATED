@@ -30,7 +30,7 @@ int main(int argc, char *argv[])
 	*/
 
 	Core::WALLET_IP_ADDRESS = Core::CONFIG.strWalletIP;
-	Core::WALLET_PORT = std::to_string(Core::CONFIG.nWalletPort);
+	Core::WALLET_PORT = to_string(Core::CONFIG.nWalletPort);
 
 	// before starting the pool we need to initialise the statistics collector class
 	Core::STATSCOLLECTOR.Init();
