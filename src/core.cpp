@@ -20,6 +20,7 @@ namespace Core
 
 	/** The IP of the wallet server **/
 	std::string WALLET_IP_ADDRESS;
+	std::string WALLET_PORT;
 
 	/** Coinbase Transaction for this Block. **/
 	Coinbase cGlobalCoinbase;
@@ -145,7 +146,7 @@ namespace Core
 		LLP::Thread_t ORPHAN(OrphanThread);
         printf("Startin Daemon connections");
 		for(int nIndex = 0; nIndex < nMaxDaemons; nIndex++)
-			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, Core::WALLET_IP_ADDRESS, "9325"));
+			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, Core::WALLET_IP_ADDRESS, Core::WALLET_PORT));
 		printf("...done");
 		Sleep(1000);
 		SERVER    = new LLP::Server<LLP::PoolConnection>(nPort, nPoolThreads, fDDOS, cScore, rScore, 20);

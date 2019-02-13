@@ -13,6 +13,7 @@ namespace Core
         void PrintConfig();
 
         std::string  strWalletIP;
+        int          nWalletPort;
         int          nPort;
         int          nDaemonThreads;
         int          nPoolThreads;

@@ -69,6 +69,7 @@ namespace Core
 	
 	/** The IP of the wallet server **/
 	extern std::string WALLET_IP_ADDRESS;
+	extern std::string WALLET_PORT;
 	
 	/** Global Declaration of the Coinbase Transaction. **/
 	extern Coinbase cGlobalCoinbase;

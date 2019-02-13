@@ -12,6 +12,7 @@ namespace Core
     Config::Config()
     {
         strWalletIP = "127.0.0.1";
+        nWalletPort = 9325;
         nPort = 9549;
 
         nDaemonThreads = 10;
@@ -36,6 +37,7 @@ namespace Core
 		printf("Configuration: \n");
 		printf("-------------\n");
 		printf("Wallet IP: %s \n", strWalletIP.c_str());
+        printf("Wallet Port: %i \n", nWalletPort);
 		printf("Port: %i \n", nPort);
 
         printf("Daemon Threads: %i \n", nDaemonThreads);
@@ -70,6 +72,7 @@ namespace Core
         pt::read_json("pool.conf", root);
 
         strWalletIP = root.get<std::string>("wallet_ip");
+        nWalletPort = root.get<int>("wallet_port");
         nPort = root.get<int>("port");
 
         nDaemonThreads = root.get<int>("daemon_threads");
