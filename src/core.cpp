@@ -407,7 +407,7 @@ namespace Core
 		LLP::Timer TIMER;
 		TIMER.Start();
 		
-		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, "9325");
+		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, Core::WALLET_PORT);
 		loop
 		{
 			Sleep(10);
@@ -487,7 +487,7 @@ namespace Core
 
 		LAST_BLOCK_FOUND_TIMER.Start();
 		
-		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, "9325");
+		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, Core::WALLET_PORT);
 		loop
 		{
 			Sleep(10);
