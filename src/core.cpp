@@ -406,6 +406,8 @@ namespace Core
 		printf("[MASTER] Initialized Orphan Thread\n");
 		LLP::Timer TIMER;
 		TIMER.Start();
+		LLP::Timer CHECK_BLOCK_TIMER;
+		CHECK_BLOCK_TIMER.Start();
 		
 		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, Core::WALLET_PORT);
 		loop
@@ -418,6 +420,7 @@ namespace Core
 				Sleep(1000);
 				
 				TIMER.Reset();
+				CHECK_BLOCK_TIMER.Reset();
 				if(!CLIENT->Connect())
 					continue;
 					
@@ -459,7 +462,7 @@ namespace Core
 				continue;
 			
 			/** Check last 5 blocks every 20 seconds. **/
-			if(TIMER.ElapsedMilliseconds() > 20000)
+			if(CHECK_BLOCK_TIMER.ElapsedMilliseconds() > 20000)
 			{
 				std::vector<uint1024> vKeys = BlockDB.GetKeys();
 				printf("Checking last 5 blocks...\n");
@@ -467,9 +470,19 @@ namespace Core
 				{
 					LLD::Block cBlock = BlockDB.GetRecord(vKeys[nIndex]);
 					if(cBlock.nRound >= nCurrentRound -5 && cBlock.nCoinbaseValue > 0)
+					{
+						printf("Checking block %s\n", vKeys[nIndex].ToString().substr(0, 20).c_str());
 						CLIENT->CheckBlock(vKeys[nIndex]);
+					}
 				}
 					
+				CHECK_BLOCK_TIMER.Reset();
+			}
+
+			/** Ping The Daemon to Keep Connection Alive. **/
+			if(TIMER.ElapsedMilliseconds() > 5000)
+			{
+				CLIENT->Ping();
 				TIMER.Reset();
 			}	
 		}
@@ -665,3 +678,4 @@ namespace Core
 		}
 	}
 }
+
