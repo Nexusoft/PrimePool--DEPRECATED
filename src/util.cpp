@@ -2,8 +2,9 @@
 #include "core.h"
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <iostream>
 
-static boost::mutex MUTEX;
+static std::mutex MUTEX;
 static FILE* fileout = NULL;
 
 
@@ -14,9 +15,9 @@ int ConsoleOutput(const char* pszFormat, ...)
 	
 	if (!fileout)
     {
-        boost::filesystem::path pathDebug = "debug.log";
-        fileout = fopen(pathDebug.string().c_str(), "a");
-        if (fileout) setbuf(fileout, NULL); // unbuffered
+        fileout = fopen("debug.log", "a");
+        if (fileout) 
+			setbuf(fileout, NULL); // unbuffered
     }
 	
     if (fileout)
@@ -45,7 +46,7 @@ int ConsoleOutput(const char* pszFormat, ...)
 
 static std::vector<std::string> BANNED_ACCOUNTS; // these need to go somewhere better
 static int BANNED_ACCOUNTS_LAST_MOD = 0;
-static boost::mutex BANNED_ACCOUNTS_MUTEX;
+static std::mutex BANNED_ACCOUNTS_MUTEX;
 void LoadBannedAccounts()
 {
     BANNED_ACCOUNTS_MUTEX.lock();
@@ -72,7 +73,7 @@ void LoadBannedAccounts()
 
 static std::vector<std::string> BANNED_IP_ADDRESSES;
 static int BANNED_IP_ADDRESSES_LAST_MOD = 0;
-static boost::mutex BANNED_IP_ADDRESSES_MUTEX;
+static std::mutex BANNED_IP_ADDRESSES_MUTEX;
 void LoadBannedIPAddresses()
 {
     BANNED_IP_ADDRESSES_MUTEX.lock();

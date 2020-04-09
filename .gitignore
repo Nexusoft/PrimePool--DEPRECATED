@@ -3,5 +3,6 @@
 *.P
 *.bat
 *.exe
-*.filter
+*.filters
+*.log
 *.user

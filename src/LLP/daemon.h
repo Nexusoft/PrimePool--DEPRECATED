@@ -1,9 +1,14 @@
-#ifndef COINSHEILD_DAEMON_H
-#define COINSHIELD_DAEMON_H
-
+#ifndef NEXUS_DAEMON_H
+#define NEXUS_DAEMON_H
 
 #include "types.h"
+#include "block.h"
+#include "connection.h"
+#include "network.h"
+#include "socket.h"
 #include "../hash/uint1024.h"
+
+#include <mutex>
 
 class Coinbase;
 namespace Core { class CBlock; }
@@ -17,11 +22,15 @@ namespace LLP
 	/** Daemon Connection Class. Handles all the Reading / Writing from the Daemon Server. **/
 	class DaemonConnection : public Connection
 	{
-		Service_t IO_SERVICE;
 		std::string IP, PORT;
+		uint32_t TIMEOUT;
 		
 	public:
-		DaemonConnection(std::string ip, std::string port) { IP = ip; PORT = port; }
+		DaemonConnection(std::string ip, std::string port, uint32_t timeout = 10) 
+			: IP{ip}
+			, PORT{port}
+			, TIMEOUT{timeout}		
+			{}
 		
 		/** Enumeration to interpret Daemon Packets. **/
 		enum
@@ -131,33 +140,31 @@ namespace LLP
 		{
 			try
 			{
-				using boost::asio::ip::tcp;
-				
-				tcp::resolver 			  RESOLVER(IO_SERVICE);
-				tcp::resolver::query      QUERY   (tcp::v4(), IP.c_str(), PORT.c_str());
-				tcp::resolver::iterator   ADDRESS = RESOLVER.resolve(QUERY);
-				
-				this->SOCKET = Socket_t(new tcp::socket(IO_SERVICE));
-				this->SOCKET -> connect(*ADDRESS, this->ERROR_HANDLE);
-				
-				if(Errors())
+				uint16_t port = (uint16_t)atoi(PORT.c_str());
+				CNetAddr ip(IP);
+				CService addr(ip, port);
+				SOCKET = std::make_shared<Socket>();
+				SOCKET->Connect(addr, TIMEOUT);
+
+				if (Errors())
 				{
-					this->Disconnect();
+					Disconnect();
 					return false;
 				}
-				
-				this->CONNECTED = true;
-				this->TIMER.Start();
+
+				CONNECTED = true;
+				TIMER.Start();
+
 
 				return true;
 			}
-			catch(...){ }
-			
-			this->CONNECTED = false;
+			catch (...) {}
+
+			CONNECTED = false;
 			return false;
 		}
 		
-		Core::CBlock* DeserializeBlock(std::vector<unsigned char> DATA);
+		CBlock::Uptr DeserializeBlock(std::vector<unsigned char> const& DATA);
 	};
 	
 	
@@ -168,7 +175,7 @@ namespace LLP
 		
 		/** Incoming / Outgoing Blocks and Mutex Locks. **/
 		std::vector<PoolConnection*> CONNECTIONS;
-		boost::mutex            CONNECTION_MUTEX;
+		std::mutex            CONNECTION_MUTEX;
 	
 		/** Daemon Outgoing Connection Handle **/
 		DaemonConnection* CLIENT;
@@ -178,7 +185,12 @@ namespace LLP
 		unsigned int nTotalConnections = 0, ID = 0;
 		bool fNewBlock = false;
 		
-		DaemonHandle(unsigned int nID, std::string IP, std::string PORT) : ID(nID), THREAD(boost::bind(&DaemonHandle::DaemonThread, this)){ CLIENT = new LLP::DaemonConnection(IP, PORT); }
+		DaemonHandle(unsigned int nID, std::string IP, std::string PORT) 
+			: ID(nID)
+			, THREAD(std::bind(&DaemonHandle::DaemonThread, this))
+		{ 
+			CLIENT = new LLP::DaemonConnection(std::move(IP), std::move(PORT));
+		}
 
 		/** Flag to allow Handle to Resupply on New Block. **/
 		bool fCoinbasePending = false;

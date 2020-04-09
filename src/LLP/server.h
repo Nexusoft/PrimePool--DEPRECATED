@@ -1,7 +1,9 @@
 #ifndef COINSHIELD_LLP_SERVER_H
 #define COINSHIELD_LLP_SERVER_H
 
-#include "types.h"
+//#include "types.h"
+#include "ddos.h"
+#include "socket.h"
 
 namespace LLP
 {
@@ -17,12 +19,10 @@ namespace LLP
 		Thread_t DATA_THREAD;
 		
 	public:
-	
-		/** Service that is used to handle Connections on this Thread. **/
-		Service_t IO_SERVICE;
 		
 		/** Variables to track Connection / Request Count. **/
-		bool fDDOS; unsigned int nConnections, ID, REQUESTS, TIMEOUT, DDOS_rSCORE, DDOS_cSCORE;
+		bool fDDOS; 
+		unsigned int nConnections, ID, REQUESTS, TIMEOUT, DDOS_rSCORE, DDOS_cSCORE;
 		
 		/** Vector to store Connections. **/
 		std::vector< ProtocolType* > CONNECTIONS;
@@ -155,15 +155,25 @@ namespace LLP
 			}
 		}
 		
-		DataThread<ProtocolType>(unsigned int id, bool isDDOS, unsigned int rScore, unsigned int cScore, unsigned int nTimeout) : 
-			ID(id), fDDOS(isDDOS), DDOS_rSCORE(rScore), DDOS_cSCORE(cScore), TIMEOUT(nTimeout), REQUESTS(0), CONNECTIONS(0), nConnections(0), DATA_THREAD(boost::bind(&DataThread::Thread, this)){ }
+		DataThread<ProtocolType>(unsigned int id, bool isDDOS, unsigned int rScore, unsigned int cScore, unsigned int nTimeout) 
+			: ID(id)
+			, fDDOS(isDDOS)
+			, DDOS_rSCORE(rScore)
+			, DDOS_cSCORE(cScore)
+			, TIMEOUT(nTimeout)
+			, REQUESTS(0)
+			, CONNECTIONS(0)
+			, nConnections(0)
+			, DATA_THREAD(std::bind(&DataThread::Thread, this))
+		{ }
 	};
 
 	
 	
 	/** Base Class to create a Custom LLP Server. Protocol Type class must inherit Connection,
 		and provide a ProcessPacket method. Optional Events by providing GenericEvent method. **/
-	template <class ProtocolType> class Server
+	template <class ProtocolType> 
+	class Server
 	{
 		/** The DDOS variables. Tracks the Requests and Connections per Second
 			from each connected address. **/
@@ -178,8 +188,13 @@ namespace LLP
 		std::vector< DataThread<ProtocolType>* > DATA_THREADS;
 		
 		
-		Server<ProtocolType>(int nPort, int nMaxThreads, bool isDDOS, int cScore, int rScore, int nTimeout) : 
-			fDDOS(isDDOS), LISTENER(SERVICE), PORT(nPort), MAX_THREADS(nMaxThreads), METER_THREAD(boost::bind(&Server::MeterThread, this)), LISTEN_THREAD(boost::bind(&Server::ListeningThread, this))
+		Server<ProtocolType>(int nPort, int nMaxThreads, bool isDDOS, int cScore, int rScore, int nTimeout) 
+			: fDDOS(isDDOS), 
+			LISTENER(SERVICE),
+			PORT(nPort),
+			MAX_THREADS(nMaxThreads),
+			METER_THREAD(std::bind(&Server::MeterThread, this)), 
+			LISTEN_THREAD(std::bind(&Server::ListeningThread, this))
 		{
 			for(int index = 0; index < MAX_THREADS; index++)
 				DATA_THREADS.push_back(new DataThread<ProtocolType>(index, fDDOS, rScore, cScore, nTimeout));
@@ -188,9 +203,6 @@ namespace LLP
 	private:
 	
 		/** Basic Socket Handle Variables. **/
-		Service_t   SERVICE;
-		Listener_t  LISTENER;
-		Error_t     ERROR_HANDLE;
 		Thread_t    LISTEN_THREAD;
 		Thread_t    METER_THREAD;
 		
@@ -199,7 +211,8 @@ namespace LLP
 			This keeps the load balanced across all server threads. **/
 		int FindThread()
 		{
-			int nIndex = 0, nConnections = DATA_THREADS[0]->nConnections;
+			int nIndex = 0, 
+				nConnections = DATA_THREADS[0]->nConnections;
 			for(int index = 1; index < MAX_THREADS; index++)
 			{
 				if(DATA_THREADS[index]->nConnections < nConnections)
@@ -286,12 +299,9 @@ namespace LLP
 						/** DDOS Operations: Only executed when DDOS is enabled. **/
 						if(fDDOS && DDOS_MAP[ADDRESS]->Banned())
 						{
-							SOCKET -> shutdown(boost::asio::ip::tcp::socket::shutdown_both, ERROR_HANDLE);
-							SOCKET -> close();
-								
+							SOCKET->Close();								
 							continue;
-						}
-					
+						}					
 					
 						/** Add new connection if passed all DDOS checks. **/
 						DATA_THREADS[nThread]->AddConnection(SOCKET, DDOS_MAP[ADDRESS]);

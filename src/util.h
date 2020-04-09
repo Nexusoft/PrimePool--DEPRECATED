@@ -1,24 +1,25 @@
-#ifndef COINSHIELD_UTIL_H
-#define COINSHIELD_UTIL_H
+#ifndef NEXUS_UTIL_H
+#define NEXUS_UTIL_H
 
 #include <string>
 #include <vector>
+#include <thread>
 #include <stdio.h>
 #include <cstdlib>
 #include <stdarg.h>
-#include <boost/thread.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <mutex>
+#include <fstream>
+#include <sstream>
+
 #ifdef WIN32
 #include <mpir.h>
 #else
 #include <gmp.h>
 #endif
 #include "bignum.h"
-#include <fstream>
-#include <sstream>
 
-#define LOCK(a) boost::lock_guard<boost::mutex> lock(a)
+
+#define LOCK(a) std::lock_guard<std::mutex> lock(a)
 
 #define loop                for(;;)
 #define printf              ConsoleOutput
@@ -28,17 +29,6 @@ typedef long long  int64;
 typedef unsigned long long  uint64;
 
 int ConsoleOutput(const char* pszFormat, ...);
-
-#ifndef WIN32
-//inline void Sleep(int64 n)
-//{
-    /*Boost has a year 2038 problem— if the request sleep time is past epoch+2^31 seconds the sleep returns instantly.
-      So we clamp our sleeps here to 10 years and hope that boost is fixed by 2028.*/
-//    boost::thread::sleep(boost::get_system_time() + boost::posix_time::milliseconds(n>315576000000LL?315576000000LL:n));
-//}
-
-inline void Sleep(unsigned int nTime){ boost::this_thread::sleep(boost::posix_time::milliseconds(nTime)); }
-#endif
 
 inline int bignum2mpz(const BIGNUM *bn, mpz_t g)
 {
