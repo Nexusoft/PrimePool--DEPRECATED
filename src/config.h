@@ -13,6 +13,7 @@ namespace Core
         void PrintConfig();
 
         std::string  strWalletIP;
+        int          nWalletPort;
         int          nPort;
         int          nDaemonThreads;
         int          nPoolThreads;
@@ -21,6 +22,7 @@ namespace Core
         int          cScore;
         int          nShare;
         int          nPoolFee;
+        bool         fTestNet;
 
         std::string  strStatsDBServerIP;
         int          nStatsDBServerPort;

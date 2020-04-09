@@ -1,22 +1,27 @@
-#ifndef COINSHIELD_LLD_DATABASE
-#define COINSHIELD_LLD_DATABASE
+#ifndef NEXUS_LLD_DATABASE
+#define NEXUS_LLD_DATABASE
 
 #include <fstream>
 #include <string>
+#include <mutex>
+#include <map>
 #include "../util.h"
 
 namespace LLD
 {
 
 	/** Main Class to be inherited Creating Customized Database Handles. Contains only the Key. **/
-	template<typename KeyType> class Record { public: KeyType cKey; };
-	
+	template<typename KeyType> 
+	class Record 
+	{
+		public: KeyType cKey; 
+	};	
 
 	/** Base Template Class for the Database Handle. Processes main Lower Level Disk Communications. **/
 	template<typename KeyType, class RecordType> class Database
 	{
 		/** Mutex for Thread Synchronization. **/
-		boost::mutex DATABASE_MUTEX;
+		std::mutex DATABASE_MUTEX;
 		
 		std::string strFilename;
 		typename std::map<KeyType, RecordType> mapRecords;

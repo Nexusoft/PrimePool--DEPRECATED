@@ -1,14 +1,16 @@
-#ifndef COINSHIELD_UTIL_H
-#define COINSHIELD_UTIL_H
+#ifndef NEXUS_UTIL_H
+#define NEXUS_UTIL_H
 
 #include <string>
 #include <vector>
+#include <thread>
 #include <stdio.h>
 #include <cstdlib>
 #include <stdarg.h>
-#include <boost/thread.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include <mutex>
+#include <fstream>
+#include <sstream>
+
 #ifdef WIN32
 #include <mpir.h>
 #else
@@ -17,7 +19,8 @@
 #include <fstream>
 #include <sstream>
 
-#define LOCK(a) boost::lock_guard<boost::mutex> lock(a)
+
+#define LOCK(a) std::lock_guard<std::mutex> lock(a)
 
 #define loop                for(;;)
 #define printf              ConsoleOutput

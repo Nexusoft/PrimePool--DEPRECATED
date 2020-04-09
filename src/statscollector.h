@@ -199,11 +199,11 @@ namespace Core
 
 		std::map<std::string, ConnectionData> CONNECTIONS_BY_ADDRESS;
 
-		boost::mutex CONNECTIONS_BY_ADDRESS_MUTEX;
-		boost::mutex POOL_DATA_MUTEX;
-		boost::mutex ROUND_HISTORY_MUTEX;
-		boost::mutex ACCOUNT_DATA_MUTEX;
-		boost::mutex ACCOUNT_EARNINGS_MUTEX;
+		std::mutex CONNECTIONS_BY_ADDRESS_MUTEX;
+		std::mutex POOL_DATA_MUTEX;
+		std::mutex ROUND_HISTORY_MUTEX;
+		std::mutex ACCOUNT_DATA_MUTEX;
+		std::mutex ACCOUNT_EARNINGS_MUTEX;
 
 	private:
 		

@@ -11,6 +11,9 @@
 #endif
 #include "config.h"
 
+#include <memory>
+#include <mutex>
+#include <map>
 
 class Coinbase;
 
@@ -70,6 +73,7 @@ namespace Core
 	
 	/** The IP of the wallet server **/
 	extern std::string WALLET_IP_ADDRESS;
+	extern std::string WALLET_PORT;
 	
 	/** Global Declaration of the Coinbase Transaction. **/
 	extern Coinbase cGlobalCoinbase;
@@ -114,7 +118,7 @@ namespace Core
 	
 	/** --------- CORE.CPP ----------- **/
 	extern std::map<uint1024, double> PRIMES_MAP;
-	extern boost::mutex              PRIMES_MUTEX;
+	extern std::mutex              PRIMES_MUTEX;
 	
 	extern LLP::Timer nMeterTimer;
 	extern unsigned int nShares;

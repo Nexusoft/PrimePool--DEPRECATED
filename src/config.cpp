@@ -1,22 +1,24 @@
 
 #include "config.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
+#include "json/json.hpp"
+
+using json = nlohmann::json;
 
 #include <fstream>
-
-namespace pt = boost::property_tree;
+#include <iostream>
 
 namespace Core
 {
     Config::Config()
     {
         strWalletIP = "127.0.0.1";
+        nWalletPort = 9325;
         nPort = 9549;
+        fTestNet = false;
 
         nDaemonThreads = 10;
         nPoolThreads = 20;
-        bDDOS = true;
+        nDDOS = true;
         rScore = 20;
         cScore = 2;
         nShare = 40000000;
@@ -33,28 +35,30 @@ namespace Core
 
     void Config::PrintConfig()
 	{
-		printf("Configuration: \n");
-		printf("-------------\n");
-		printf("Wallet IP: %s \n", strWalletIP.c_str());
-		printf("Port: %i \n", nPort);
+		std::cout << "Configuration: " << std::endl;
+		std::cout << "-------------" << std::endl;
+		std::cout << "TestNet: " << fTestNet << std::endl;
+		std::cout << "Wallet IP: " << strWalletIP << std::endl;
+		std::cout << "Wallet Port: " << nWalletPort << std::endl;
+		std::cout << "Port: " << nPort << std::endl;
 
-        printf("Daemon Threads: %i \n", nDaemonThreads);
-		printf("Pool Threads: %i \n", nPoolThreads);
+		std::cout << "Daemon Threads: " << nDaemonThreads << std::endl;
+		std::cout << "Pool Threads: " << nPoolThreads << std::endl;
 
-        printf("bDDOS: %i \n", bDDOS);
-        printf("rScore: %i \n", rScore);
-        printf("cScore: %i \n", cScore);
-        printf("Min Share Diff: %i \n", nShare);
-        printf("Pool Fee: %i \n", nPoolFee);
+		std::cout << "nDDOS: " << nDDOS << std::endl;;
+		std::cout << "rScore: " << rScore << std::endl;
+		std::cout << "cScore: " << cScore << std::endl;
+		std::cout << "Min Share Diff: " << nShare << std::endl;
+		std::cout << "Pool Fee: " << nPoolFee << std::endl;
 
-        printf("Stats DB Server IP: %s \n", strStatsDBServerIP.c_str());
-		printf("Stats DB Port: %i \n", nStatsDBServerPort);
-        printf("Stats DB Username: %s \n", strStatsDBUsername.c_str());
-        printf("Stats DB Password: %s \n", strStatsDBPassword.c_str());
-        printf("Save Connection Stats Frequency: %i seconds \n", nSaveConnectionStatsFrequency);
-        printf("Save Connection Stats Series Frequency: %i seconds \n", nSaveConnectionStatsSeriesFrequency);
+		std::cout << "Stats DB Server IP: " << strStatsDBServerIP << std::endl;
+		std::cout << "Stats DB Port: " << nStatsDBServerPort << std::endl;
+		std::cout << "Stats DB Username: " << strStatsDBUsername << std::endl;
+		std::cout << "Stats DB Password: " << strStatsDBPassword << std::endl;
+		std::cout << "Save Connection Stats Frequency: " << nSaveConnectionStatsFrequency << " seconds"  << std::endl;
+		std::cout << "Save Connection Stats Series Frequency: " << nSaveConnectionStatsSeriesFrequency << " seconds"  << std::endl;
 
-        printf("-------------\n");
+		std::cout << "-------------" << std::endl;
 
 	}
 
@@ -62,30 +66,30 @@ namespace Core
     {
         bool bSuccess = true;
 
-        printf("Reading config file pool.conf\n");
+        std::cout << "Reading config file pool.conf" << std::endl;
 
         std::ifstream lConfigFile("pool.conf");
 
-        pt::ptree root;
-        pt::read_json("pool.conf", root);
+		json j = json::parse(lConfigFile);
+		j.at("testnet").get_to(fTestNet);
+		j.at("wallet_ip").get_to(strWalletIP);
+		j.at("wallet_port").get_to(nWalletPort);
+		j.at("port").get_to(nPort);
 
-        strWalletIP = root.get<std::string>("wallet_ip");
-        nPort = root.get<int>("port");
+		j.at("daemon_threads").get_to(nDaemonThreads);
+		j.at("pool_threads").get_to(nPoolThreads);
+		j.at("enable_ddos").get_to(nDDOS);
+		j.at("ddos_rscore").get_to(rScore);
+		j.at("ddos_cscore").get_to(cScore);
+		j.at("min_share").get_to(nShare);
+		j.at("pool_fee").get_to(nPoolFee);
 
-        nDaemonThreads = root.get<int>("daemon_threads");
-        nPoolThreads = root.get<int>("pool_threads");
-        bDDOS = root.get<bool>("enable_ddos");
-        rScore = root.get<int>("ddos_rscore");
-        cScore = root.get<int>("ddos_cscore");
-        nShare = root.get<int>("min_share");
-        nPoolFee = root.get<int>("pool_fee");
-
-        strStatsDBServerIP = root.get<std::string>("stats_db_server_ip");
-        nStatsDBServerPort = root.get<int>("stats_db_server_port");
-        strStatsDBUsername = root.get<std::string>("stats_db_username");
-        strStatsDBPassword = root.get<std::string>("stats_db_password");
-        nSaveConnectionStatsFrequency = root.get<int>("connection_stats_frequency");
-        nSaveConnectionStatsSeriesFrequency = root.get<int>("connection_stats_series_frequency");
+		j.at("stats_db_server_ip").get_to(strStatsDBServerIP);
+		j.at("stats_db_server_port").get_to(nStatsDBServerPort);
+		j.at("stats_db_username").get_to(strStatsDBUsername);
+		j.at("stats_db_password").get_to(strStatsDBPassword);
+		j.at("connection_stats_frequency").get_to(nSaveConnectionStatsFrequency);
+		j.at("connection_stats_series_frequency").get_to(nSaveConnectionStatsSeriesFrequency);
 
         PrintConfig();
         // TODO Need to add exception handling here and set bSuccess appropriately

@@ -2,6 +2,7 @@
 #define COINSHIELD_WEBUI_H
 
 #include "types.h"
+#include "connection.h"
 
 namespace LLP
 {
@@ -41,7 +42,7 @@ namespace LLP
 	
 	public:
 		UiConnection() : Connection() {}
-		UiConnection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN, bool isDDOS) : Connection( SOCKET_IN, DDOS_IN, isDDOS ) {}
+//		UiConnection( Socket_t SOCKET_IN, DDOS_Filter* DDOS_IN, bool isDDOS) : Connection( SOCKET_IN, DDOS_IN, isDDOS ) {}
 		
 		/** Event Function to Customize Code For Inheriting Class Happening on the LLP Data Threads. **/
 		void Event(unsigned char EVENT, unsigned int LENGTH = 0);

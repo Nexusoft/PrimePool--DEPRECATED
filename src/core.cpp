@@ -1,7 +1,7 @@
 #include "LLP/pool.h"
 #include "LLP/server.h"
 #include "LLP/daemon.h"
-#include "LLP/webui.h"
+//#include "LLP/webui.h"
 #include "LLD/record.h"
 
 #include "core.h"
@@ -20,10 +20,11 @@ namespace Core
 
 	/** The IP of the wallet server **/
 	std::string WALLET_IP_ADDRESS;
+	std::string WALLET_PORT;
 
 	/** Coinbase Transaction for this Block. **/
 	Coinbase cGlobalCoinbase;
-	std::string POOL_VERSION = "1.0.1";
+	std::string POOL_VERSION = "1.0.2";
 	
 
 	/** Wallet Connection Variables. **/
@@ -32,13 +33,13 @@ namespace Core
 	
 	std::vector<LLP::DaemonHandle*> DAEMON_CONNECTIONS;
 	LLP::Server<LLP::PoolConnection>* SERVER;
-	LLP::Server<LLP::UiConnection>* WEBSERVER;
+	//LLP::Server<LLP::UiConnection>* WEBSERVER;
 	
 	LLP::Thread_t MASTER;
 	
 	
 	/** Mutex for Thread Synchronization [std::map is not thread safe]. **/
-	boost::mutex              PRIMES_MUTEX;
+	std::mutex              PRIMES_MUTEX;
 	
 	
 	/** Map to hold the Prime Clusters Found. **/
@@ -145,7 +146,7 @@ namespace Core
 		LLP::Thread_t ORPHAN(OrphanThread);
         printf("Startin Daemon connections");
 		for(int nIndex = 0; nIndex < nMaxDaemons; nIndex++)
-			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, Core::WALLET_IP_ADDRESS, "9325"));
+			DAEMON_CONNECTIONS.push_back(new LLP::DaemonHandle(nIndex, Core::WALLET_IP_ADDRESS, Core::WALLET_PORT));
 		printf("...done");
 		Sleep(1000);
 		SERVER    = new LLP::Server<LLP::PoolConnection>(nPort, nPoolThreads, fDDOS, cScore, rScore, 20);
@@ -405,8 +406,10 @@ namespace Core
 		printf("[MASTER] Initialized Orphan Thread\n");
 		LLP::Timer TIMER;
 		TIMER.Start();
+		LLP::Timer CHECK_BLOCK_TIMER;
+		CHECK_BLOCK_TIMER.Start();
 		
-		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, "9325");
+		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, Core::WALLET_PORT);
 		loop
 		{
 			Sleep(10);
@@ -417,6 +420,7 @@ namespace Core
 				Sleep(1000);
 				
 				TIMER.Reset();
+				CHECK_BLOCK_TIMER.Reset();
 				if(!CLIENT->Connect())
 					continue;
 					
@@ -458,7 +462,7 @@ namespace Core
 				continue;
 			
 			/** Check last 5 blocks every 20 seconds. **/
-			if(TIMER.ElapsedMilliseconds() > 20000)
+			if(CHECK_BLOCK_TIMER.ElapsedMilliseconds() > 20000)
 			{
 				std::vector<uint1024> vKeys = BlockDB.GetKeys();
 				printf("Checking last 5 blocks...\n");
@@ -466,9 +470,19 @@ namespace Core
 				{
 					LLD::Block cBlock = BlockDB.GetRecord(vKeys[nIndex]);
 					if(cBlock.nRound >= nCurrentRound -5 && cBlock.nCoinbaseValue > 0)
+					{
+						printf("Checking block %s\n", vKeys[nIndex].ToString().substr(0, 20).c_str());
 						CLIENT->CheckBlock(vKeys[nIndex]);
+					}
 				}
 					
+				CHECK_BLOCK_TIMER.Reset();
+			}
+
+			/** Ping The Daemon to Keep Connection Alive. **/
+			if(TIMER.ElapsedMilliseconds() > 5000)
+			{
+				CLIENT->Ping();
 				TIMER.Reset();
 			}	
 		}
@@ -486,7 +500,7 @@ namespace Core
 
 		LAST_BLOCK_FOUND_TIMER.Start();
 		
-		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, "9325");
+		LLP::DaemonConnection* CLIENT = new LLP::DaemonConnection(Core::WALLET_IP_ADDRESS, Core::WALLET_PORT);
 		loop
 		{
 			Sleep(10);
@@ -537,13 +551,16 @@ namespace Core
 			
 			if(TIMER.ElapsedMilliseconds() > 2000)
 			{
-				CLIENT->GetHeight();
-				CLIENT->GetRound();
 					
 				if(fCoinbasePending)
 				{
 					//printf("[MASTER] Getting Reward.\n");
 					CLIENT->GetReward();
+				}
+				else
+				{
+					CLIENT->GetHeight();
+                                	CLIENT->GetRound();
 				}
 						
 				//printf("[MASTER] Checking Round.\n");
@@ -661,3 +678,4 @@ namespace Core
 		}
 	}
 }
+

@@ -1,10 +1,12 @@
 {
+    "testnet" : "false",
     "wallet_ip" : "127.0.0.1",
+    "wallet_port" : "9325",
     "port" : 9549,
     
     "daemon_threads" : 10,
     "pool_threads" : 20,
-    "enable_ddos" : "true",
+    "enable_ddos" : true,
     "ddos_rscore" : 20,
     "ddos_cscore" : 2,
     "min_share" : 40000000,

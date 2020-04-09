@@ -1,13 +1,13 @@
 #include "pool.h"
 #include "daemon.h"
+#include "ddos.h"
 #include "../core.h"
 #include "../util.h"
 #include "../base58.h"
 #include "../statscollector.h"
 #include "../LLD/record.h"
 #include <math.h>
-#include <boost/algorithm/string/predicate.hpp>
-
+#include <iostream>
 
 namespace LLP
 {	
@@ -21,22 +21,17 @@ namespace LLP
 		
 		while(!NEW_BLOCKS.empty())
 		{
-			Core::CBlock* BLOCK = NEW_BLOCKS.top();
+			NEW_BLOCKS.top();
 			NEW_BLOCKS.pop();
-			
-			delete BLOCK;
 		}
-		
-		for(std::map<uint1024, Core::CBlock*>::iterator IT = MAP_BLOCKS.begin(); IT != MAP_BLOCKS.end(); ++ IT)
-			delete IT->second;
 						
 		MAP_BLOCKS.clear();
 	}
 
-	void PoolConnection::AddBlock(Core::CBlock* BLOCK)
+	void PoolConnection::AddBlock(CBlock::Uptr BLOCK)
 	{
 		LOCK(BLOCK_MUTEX);
-		NEW_BLOCKS.push(BLOCK);
+		NEW_BLOCKS.push(std::move(BLOCK));
 		
 		nBlocksWaiting--;
 	}
@@ -52,7 +47,7 @@ namespace LLP
 			Packet PACKET = this->INCOMING;
 			
 			/** Check a Block Packet once the Header has been Read. **/
-			if(fDDOS)
+			if(m_bDDOS)
 			{
 				if(PACKET.LENGTH > 136)
 					DDOS->Ban("Max Packet Size Exceeded");
@@ -119,15 +114,15 @@ namespace LLP
 			{ LOCK(BLOCK_MUTEX);
 				while(!NEW_BLOCKS.empty())
 				{
-					Core::CBlock* BLOCK = NEW_BLOCKS.top();
+					CBlock::Sptr BLOCK{std::move(NEW_BLOCKS.top())};
 					NEW_BLOCKS.pop();
 					
 					/** Add to the block map. **/
 					MAP_BLOCKS[BLOCK->GetHash()] = BLOCK;
-					
+
 					/** Construct a response packet by serializing the Block. **/
 					Packet RESPONSE = GetPacket(BLOCK_DATA);
-					RESPONSE.DATA   = SerializeBlock(BLOCK);
+					RESPONSE.DATA   = SerializeBlock(std::move(BLOCK));
 					RESPONSE.LENGTH = RESPONSE.DATA.size();
 					
 					this->WritePacket(RESPONSE);
@@ -172,7 +167,7 @@ namespace LLP
 			/** Multiply DDOS Score for Multiple Logins after Successful Login. **/
 			if(fLoggedIn)
 			{
-				if(fDDOS)
+				if(m_bDDOS)
 					DDOS->rSCORE += 10;
 					
 				return true;
@@ -186,15 +181,16 @@ namespace LLP
 			if(!cAddress.IsValid() )
 			{
 				printf("[THREAD] Pool LLP: Bad Account %s\n", ADDRESS.c_str());
-				if(fDDOS)
+				if(m_bDDOS)
 					DDOS->Ban("Invalid Nexus Address on Login");
 					
 				return false;
-			}
-            
-            std::string ip_address = GetIPAddress();
+			}            
 
-			printf("[THREAD] Pool Login: %s\t IP:%s\t (%d connections)\n", ADDRESS.c_str(), ip_address.c_str(), Core::STATSCOLLECTOR.GetConnectionCount(ADDRESS) );
+			std::string ip_address = GetRemoteIPAddress();
+			std::cout << "[THREAD] Pool Login: " << ADDRESS << "\t IP:" << ip_address
+				<< "\t (" << Core::STATSCOLLECTOR.GetConnectionCount(ADDRESS) << " connections)" << std::endl;
+
 			if(!Core::AccountDB.HasKey(ADDRESS))
 			{
 				LLD::Account cNewAccount(ADDRESS);
@@ -204,7 +200,6 @@ namespace LLP
 				printf("[ACCOUNT] New Account %s\n", ADDRESS.c_str());
 				printf("\n+++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
 			}
-
             
             if(IsBannedAccount(ADDRESS) )
             {
@@ -219,8 +214,7 @@ namespace LLP
                 
                 DDOS->Ban("Account is Banned");
                 
-                fLoggedIn = false;
-                
+                fLoggedIn = false;                
             }
             else
             {
@@ -229,13 +223,10 @@ namespace LLP
                 //PS
                 // QUICK HACK these are google cloud and amazon AWS IP ranges which we should allow
                 // so don't add CHECK to debug.log 
-                if( !boost::starts_with(ip_address, "104.") && !boost::starts_with(ip_address, "130.") 
-                        && !boost::starts_with(ip_address, "23.") && !boost::starts_with(ip_address, "54.") && !boost::starts_with(ip_address, "52."))
-                    printf("[ACCOUNT] Account: CHECK Address: %s  IP: %s\n", ADDRESS.c_str(), ip_address.c_str() ); // this allows you to grep the debug.log for CHECK and eyeball the frequency and ip addresses
-                
-            }
-            
-            
+                if((ip_address.find("104.") != 0) && (ip_address.find("130.") != 0)
+                        && (ip_address.find("23.") != 0)  && (ip_address.find("54.") != 0)  && (ip_address.find("52.") != 0))
+                    std::cout << "[ACCOUNT] Account: CHECK Address: " << ADDRESS  << " IP: " << ip_address << std::endl; // this allows you to grep the debug.log for CHECK and eyeball the frequency and ip addresses                
+            }            
             
 			return true;
 		}
@@ -245,7 +236,7 @@ namespace LLP
 		if(!fLoggedIn)
 		{
 			/** Amplify rScore for Requests before Logged in [Prevent DDOS this way]. **/
-			if(fDDOS)
+			if(m_bDDOS)
 				DDOS->rSCORE += 10;
 			
 			printf("[THREAD] Pool LLP: Not Logged In. Rejected Request.\n");
@@ -267,8 +258,8 @@ namespace LLP
 			LOCK(BLOCK_MUTEX); 
 			nBlockRequests++; 
 
-			if(fDDOS)
-					DDOS->rSCORE += 1;
+			if(m_bDDOS)
+				DDOS->rSCORE += 1;
 
 			return true; 
 		}
@@ -283,7 +274,7 @@ namespace LLP
 		{
 			uint1024 hashPrimeOrigin;
 			hashPrimeOrigin.SetBytes(std::vector<unsigned char>(PACKET.DATA.begin(), PACKET.DATA.end() - 8));
-				
+
 				
 			/** Don't Accept a Share with no Correlated Block. **/
 			if(!MAP_BLOCKS.count(hashPrimeOrigin))
@@ -292,7 +283,7 @@ namespace LLP
 				printf("[THREAD] Pool LLP: Block Not Found %s\n", hashPrimeOrigin.ToString().substr(0, 30).c_str());
 				Respond(NEW_BLOCK);
 				
-				if(fDDOS)
+				if(m_bDDOS)
 					DDOS->rSCORE += 1;
 				
 				return true;
@@ -306,7 +297,7 @@ namespace LLP
 				Respond(NEW_BLOCK);
 				
 				/** Be Lenient on Stale Shares [But Still amplify score above normal 1 per request.] **/
-				if(fDDOS)
+				if(m_bDDOS)
 					DDOS->rSCORE += 2;
 					
 				return true;
@@ -326,7 +317,7 @@ namespace LLP
 					Respond(REJECT);
 					
 					/** Give a Heavy Score for Duplicates. [To Amplify the already existing ++ per Request.] **/
-					if(fDDOS)
+					if(m_bDDOS)
 						DDOS->rSCORE += 5;
 					
 					return true;
@@ -389,7 +380,7 @@ namespace LLP
 				printf("[THREAD] Share Below Difficulty %f\n", nDifficulty);
 				
 				/** Give Heavy Score for Below Difficulty Shares. Would require at least 4 per Second to fulfill a score of 20. **/
-				if(fDDOS)
+				if(m_bDDOS)
 					DDOS->rSCORE += 5;
 				
 				Respond(REJECT);
@@ -424,7 +415,7 @@ namespace LLP
 			RESPONSE.DATA = uint2bytes64(nPendingPayout);
 				
 			//printf("[THREAD] Pool LLP: Account %s --> Payout Data Requested.\n", ADDRESS.c_str());
-			this->WritePacket(RESPONSE);
+	this->WritePacket(RESPONSE);
 				
 			return true;
 		}
@@ -450,7 +441,7 @@ namespace LLP
 	}
 	
 	/** Convert the Header of a Block into a Byte Stream for Reading and Writing Across Sockets. **/
-	std::vector<unsigned char> PoolConnection::SerializeBlock(Core::CBlock* BLOCK)
+	std::vector<unsigned char> PoolConnection::SerializeBlock(CBlock::Sptr BLOCK)
 	{
 		std::vector<unsigned char> HASH        = BLOCK->GetHash().GetBytes();
 		std::vector<unsigned char> MINIMUM     = uint2bytes(Core::nMinimumShare);
