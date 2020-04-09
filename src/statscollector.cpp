@@ -3,18 +3,9 @@
 #include "core.h"
 #include "LLP/types.h"
 #include "LLD/record.h"
-#include "json/json_spirit_reader_template.h"
-#include "json/json_spirit_writer_template.h"
-#include "json/json_spirit_utils.h"
-#include <boost/format.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
 
 #include "mysqlstatspersister.h"
 
-using namespace json_spirit;
 using namespace std;
 
 namespace Core

@@ -822,6 +822,11 @@ public:
 				
 		return *this;
     }
+
+	unsigned int high_bits(unsigned int mask)
+	{
+		return pn[WIDTH - 1] & mask;
+	}
 	
 	/** This method should only be used to retrieve an uint256 when stored inside an uint1024. 
 	    This is necessary for for ambiguous function declaration. */

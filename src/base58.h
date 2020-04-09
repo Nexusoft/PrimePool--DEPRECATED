@@ -11,6 +11,7 @@
 
 #include <string>
 #include <vector>
+#include <cassert>
 #include "bignum.h"
 
 namespace Core
