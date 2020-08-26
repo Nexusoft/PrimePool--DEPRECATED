@@ -4,8 +4,8 @@
 
 DEFS=-DBOOST_SPIRIT_THREADSAFE -DBOOST_THREAD_USE_LIB
 
-DEFS += $(addprefix -I,$(CURDIR)/src $(CURDIR)/src/build $(CURDIR)/src/hash $(CURDIR)/src/json $(BOOST_INCLUDE_PATH) $(OPENSSL_INCLUDE_PATH))
-LIBS = -lc -lpthread $(addprefix -L,$(BOOST_LIB_PATH) $(BDB_LIB_PATH) $(OPENSSL_LIB_PATH))
+DEFS += $(addprefix -I,$(CURDIR)/src $(CURDIR)/src/build $(CURDIR)/src/hash $(CURDIR)/src/json $(BOOST_INCLUDE_PATH)
+LIBS = -lc -lpthread $(addprefix -L,$(BOOST_LIB_PATH) $(BDB_LIB_PATH))
 
 #For Boost 1.55 Builds Uncomment the Following
 #BOOST_LIB_PATH=/usr/local/lib
@@ -18,7 +18,6 @@ LIBS += \
    -l boost_program_options$(BOOST_LIB_SUFFIX) \
    -l boost_thread$(BOOST_LIB_SUFFIX) \
    -l boost_serialization$(BOOST_LIB_SUFFIX) \
-   -l crypto \
    -l gmp \
    -l mysqlclient
 

@@ -5,7 +5,6 @@
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include <boost/serialization/list.hpp>
-#include "bignum.h"
 #include "util.h"
 #ifdef WIN32
 #include <mpir.h>
@@ -200,11 +199,11 @@ namespace Core
 
 		std::map<std::string, ConnectionData> CONNECTIONS_BY_ADDRESS;
 
-		boost::mutex CONNECTIONS_BY_ADDRESS_MUTEX;
-		boost::mutex POOL_DATA_MUTEX;
-		boost::mutex ROUND_HISTORY_MUTEX;
-		boost::mutex ACCOUNT_DATA_MUTEX;
-		boost::mutex ACCOUNT_EARNINGS_MUTEX;
+		std::mutex CONNECTIONS_BY_ADDRESS_MUTEX;
+		std::mutex POOL_DATA_MUTEX;
+		std::mutex ROUND_HISTORY_MUTEX;
+		std::mutex ACCOUNT_DATA_MUTEX;
+		std::mutex ACCOUNT_EARNINGS_MUTEX;
 
 	private:
 		

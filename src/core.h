@@ -1,7 +1,8 @@
 #ifndef COINSHIELD_LLP_CORE_H
 #define COINSHIELD_LLP_CORE_H
 
-#include "bignum.h"
+#include "hash/uint1024.h"
+#include "hash/templates.h"
 #include "util.h"
 #ifdef WIN32
 #include <mpir.h>
@@ -10,6 +11,9 @@
 #endif
 #include "config.h"
 
+#include <memory>
+#include <mutex>
+#include <map>
 
 class Coinbase;
 
@@ -58,7 +62,7 @@ namespace Core
 		}
 		
 		inline uint1024 GetHash() const { return SK1024(BEGIN(nVersion), END(nBits)); }
-		inline CBigNum GetPrime() const { return CBigNum(GetHash() + nNonce); }
+		inline uint1024 GetPrime() const { return GetHash() + nNonce; }
 	};
 
 	/** Pool Configuration **/
@@ -104,25 +108,17 @@ namespace Core
 	/** --------- PRIME.CPP ----------- **/
 	void InitializePrimes();
 	
+	uint1024 FermatTest(uint1024 n);
 	unsigned int SetBits(double nDiff);
-	unsigned int GetPrimeBits(CBigNum prime, int checks);
-	unsigned int GetFractionalDifficulty(CBigNum composite);
+	unsigned int GetFractionalDifficulty(uint1024 composite);
 	
 	double GetDifficulty(unsigned int nBits);
-	double VerifyPrimeDifficulty(CBigNum prime, int checks);
-	double CheckPrimeDifficulty(CBigNum prime);
-	double GmpVerification(CBigNum prime);
-	
-	CBigNum FermatTest(CBigNum n, CBigNum a);
-	bool Miller_Rabin(CBigNum n, int checks);
-	bool PrimeCheck(CBigNum test, int checks);
-	
-	
+	double GmpVerification(uint1024 prime);
 	
 	
 	/** --------- CORE.CPP ----------- **/
 	extern std::map<uint1024, double> PRIMES_MAP;
-	extern boost::mutex              PRIMES_MUTEX;
+	extern std::mutex              PRIMES_MUTEX;
 	
 	extern LLP::Timer nMeterTimer;
 	extern unsigned int nShares;

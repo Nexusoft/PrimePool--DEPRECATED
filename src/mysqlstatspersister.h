@@ -50,7 +50,7 @@ namespace Core
         /** Connection to MySQL **/
         MYSQL *pMYSQLConnection;
 
-        boost::mutex QUERY_MUTEX;
+        std::mutex QUERY_MUTEX;
  
     };
 }
